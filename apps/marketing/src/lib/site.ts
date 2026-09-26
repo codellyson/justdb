@@ -1,5 +1,11 @@
+/** Canonical origin — kept in sync with `site` in astro.config.mjs. */
+export const SITE_URL = 'https://justdb.kreativekorna.com';
+export const SITE_NAME = 'JustDB';
+export const ORG_NAME = 'KreativeKorna Concepts';
+
 export const REPO = 'codellyson/justdb';
 export const REPO_URL = `https://github.com/${REPO}`;
+export const REPO_ORG_URL = 'https://github.com/codellyson';
 export const RELEASES_URL = `${REPO_URL}/releases`;
 export const ISSUES_URL = `${REPO_URL}/issues`;
 export const DOCS_URL = `${REPO_URL}#readme`;

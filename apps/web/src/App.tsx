@@ -9,27 +9,63 @@ import { DashboardProvider } from './contexts/dashboard-context';
 import { PendingChangesProvider } from './contexts/pending-changes-context';
 import { ToastContainer } from './components/ui/toast';
 import { UpdatePrompt } from './components/update-prompt';
-import { SettingsModal } from './components/settings-modal';
+import { SettingsModal, type SettingsTab } from './components/settings-modal';
 import { TelemetryNotice } from './components/telemetry-notice';
 import { Home } from './routes/Home';
 import { Query } from './routes/Query';
 
-// A single, global Settings modal opened from anywhere via the
-// `justdb:open-settings` window event (header gear, AI bar, Connections gear),
-// so it works both pre- and post-connection.
-function GlobalSettings() {
+// Settings can float or dock beside the workspace. The event keeps entry
+// points in the header, AI bar, and disconnected view independent of layout.
+function SettingsWorkspace() {
   const [open, setOpen] = useState(false);
-  const [initialTab, setInitialTab] = useState<'privacy' | undefined>(undefined);
+  const [docked, setDocked] = useState(() => window.localStorage.getItem('justdb:settings-docked') !== 'false');
+  const [initialTab, setInitialTab] = useState<SettingsTab | undefined>(undefined);
   useEffect(() => {
     const onOpen = (e: Event) => {
       const tab = (e as CustomEvent).detail?.tab;
-      setInitialTab(tab === 'privacy' ? 'privacy' : undefined);
+      setInitialTab(
+        ['ai', 'connectors', 'appearance', 'formatting', 'data', 'privacy'].includes(tab)
+          ? tab as SettingsTab
+          : undefined
+      );
       setOpen(true);
     };
     window.addEventListener('justdb:open-settings', onOpen);
     return () => window.removeEventListener('justdb:open-settings', onOpen);
   }, []);
-  return <SettingsModal isOpen={open} onClose={() => setOpen(false)} initialTab={initialTab} />;
+  useEffect(() => {
+    if (!open || !docked) return;
+    const onEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setOpen(false);
+    };
+    window.addEventListener('keydown', onEscape);
+    return () => window.removeEventListener('keydown', onEscape);
+  }, [open, docked]);
+
+  const toggleDock = () => {
+    const next = !docked;
+    window.localStorage.setItem('justdb:settings-docked', String(next));
+    setDocked(next);
+  };
+
+  return (
+    <>
+      <div className={open && docked ? 'min-w-0 lg:mr-[460px]' : 'min-w-0'}>
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/query" element={<Query />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </div>
+      <SettingsModal
+        isOpen={open}
+        onClose={() => setOpen(false)}
+        docked={docked}
+        onToggleDock={toggleDock}
+        initialTab={initialTab}
+      />
+    </>
+  );
 }
 
 // Defaults match apps/next/app/providers.tsx — DashboardProvider's queries
@@ -70,14 +106,9 @@ export function App() {
           <ConnectionProvider>
             <PendingChangesProvider>
               <DashboardProvider>
-                <Routes>
-                  <Route path="/" element={<Home />} />
-                  <Route path="/query" element={<Query />} />
-                  <Route path="*" element={<Navigate to="/" replace />} />
-                </Routes>
+                <SettingsWorkspace />
                 <ToastContainer />
                 <UpdatePrompt />
-                <GlobalSettings />
                 <TelemetryNotice />
               </DashboardProvider>
             </PendingChangesProvider>

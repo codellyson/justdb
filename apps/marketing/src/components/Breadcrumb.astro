@@ -1,0 +1,23 @@
+---
+// Visible breadcrumb trail for sub-pages. Pair it with `breadcrumbJsonLd()`
+// from lib/seo so the visual trail and the structured data agree.
+interface Props {
+  trail: { name: string; path?: string }[];
+}
+const { trail } = Astro.props;
+---
+
+<nav aria-label="Breadcrumb" class="text-xs font-mono uppercase tracking-wider text-muted">
+  <ol class="flex flex-wrap items-center gap-1">
+    {trail.map((crumb, i) => (
+      <li class="flex items-center gap-1">
+        {crumb.path ? (
+          <a href={crumb.path} class="transition-colors hover:text-primary">{crumb.name}</a>
+        ) : (
+          <span aria-current="page" class="text-secondary">{crumb.name}</span>
+        )}
+        {i < trail.length - 1 && <span class="opacity-50" aria-hidden="true">/</span>}
+      </li>
+    ))}
+  </ol>
+</nav>

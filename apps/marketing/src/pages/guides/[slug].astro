@@ -1,0 +1,107 @@
+---
+import { marked } from 'marked';
+import Layout from '../../layouts/Layout.astro';
+import Nav from '../../components/Nav.astro';
+import Footer from '../../components/Footer.astro';
+import Breadcrumb from '../../components/Breadcrumb.astro';
+import CtaBand from '../../components/CtaBand.astro';
+import PageScripts from '../../components/PageScripts.astro';
+import { GUIDES } from '../../lib/guides';
+import { articleJsonLd, breadcrumbJsonLd, webPageJsonLd } from '../../lib/seo';
+
+export function getStaticPaths() {
+  return GUIDES.map((g) => ({ params: { slug: g.slug }, props: { g } }));
+}
+
+const { g } = Astro.props;
+const path = `/guides/${g.slug}`;
+const html = marked.parse(g.body.trim(), { gfm: true, breaks: false });
+
+// Other guides for the "keep reading" list.
+const more = GUIDES.filter((x) => x.slug !== g.slug);
+
+const jsonLd = [
+  articleJsonLd({ title: g.title, description: g.description, path }),
+  webPageJsonLd({ title: g.title, description: g.description, path }),
+  breadcrumbJsonLd([
+    { name: 'JustDB', path: '/' },
+    { name: 'Guides', path: '/guides' },
+    { name: g.title, path },
+  ]),
+];
+---
+
+<Layout title={`${g.title} — JustDB`} description={g.description} ogType="article" jsonLd={jsonLd}>
+  <Nav />
+
+  <div class="min-h-screen bg-bg">
+    <main class="mx-auto max-w-shell px-5 py-14 sm:px-8 sm:py-20">
+      <div class="mx-auto max-w-2xl">
+        <header class="mb-10">
+          <Breadcrumb
+            trail={[
+              { name: 'JustDB', path: '/' },
+              { name: 'Guides', path: '/guides' },
+              { name: g.tag },
+            ]}
+          />
+          <h1 class="mt-6 text-[clamp(2rem,4.6vw,3rem)] font-semibold leading-[1.08] tracking-[-0.03em] text-primary">
+            {g.title}
+          </h1>
+          <p class="mt-4 text-[16px] leading-relaxed text-secondary">{g.description}</p>
+        </header>
+
+        <article class="guide-body" set:html={html} />
+
+        <div class="mt-16 border-t border-border pt-8">
+          <p class="text-[11px] font-medium uppercase tracking-[0.14em] text-muted">Keep reading</p>
+          <ul class="mt-4 space-y-3">
+            {more.map((x) => (
+              <li>
+                <a href={`/guides/${x.slug}`} class="group flex items-baseline justify-between gap-4">
+                  <span class="text-[15px] font-medium text-primary transition-colors group-hover:text-accent">{x.title}</span>
+                  <span class="shrink-0 font-mono text-[12px] text-muted">{x.tag}</span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <CtaBand />
+  <Footer />
+  <PageScripts />
+</Layout>
+
+<style is:global>
+  /* Markdown rendered into .guide-body — a small typographic shell that matches
+     the site palette without pulling in a full prose plugin. */
+  .guide-body { @apply text-[15px] leading-relaxed text-secondary; }
+  .guide-body > * + * { @apply mt-4; }
+  .guide-body h2 {
+    @apply mt-12 mb-1 text-[22px] font-semibold tracking-tight text-primary;
+  }
+  .guide-body h3 {
+    @apply mt-8 text-[17px] font-medium text-primary;
+  }
+  .guide-body p { @apply text-secondary; }
+  .guide-body a {
+    @apply text-primary underline decoration-border-strong underline-offset-2 transition-colors hover:text-accent hover:decoration-accent;
+  }
+  .guide-body strong { @apply font-semibold text-primary; }
+  .guide-body ol { @apply mt-4 space-y-2 pl-5 list-decimal marker:text-muted; }
+  .guide-body ul { @apply mt-4 space-y-2 pl-5 list-disc marker:text-muted; }
+  .guide-body li { @apply pl-1 text-secondary; }
+  .guide-body li::marker { @apply text-muted; }
+  .guide-body code {
+    @apply rounded bg-bg-secondary px-1.5 py-0.5 font-mono text-[13px] text-primary;
+  }
+  .guide-body pre {
+    @apply mt-4 overflow-x-auto rounded-xl border border-border bg-bg-secondary/60 p-4;
+  }
+  .guide-body pre code {
+    @apply bg-transparent p-0 text-[13px] leading-relaxed text-secondary;
+  }
+</style>

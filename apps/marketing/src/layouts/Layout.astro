@@ -8,6 +8,10 @@ interface Props {
   description?: string;
   /** Social share image — resolved to an absolute URL against `site`. */
   ogImage?: string;
+  /** open-graph type — 'website' for pages, 'article' for guides. */
+  ogType?: 'website' | 'article';
+  /** Keep the page out of search indexes (e.g. thin utility routes). */
+  noindex?: boolean;
   /** Inline JSON-LD object — stringified into a <script type="application/ld+json"> tag. */
   jsonLd?: Record<string, unknown> | Record<string, unknown>[];
 }
@@ -16,6 +20,8 @@ const {
   title = 'JustDB — Simple Database Client for Developers',
   description = 'JustDB is a simple database client for developers. Browse, query and edit PostgreSQL, SQLite and Turso databases from a small desktop app — free, no signup, connecting straight from your machine.',
   ogImage = '/og-image.png',
+  ogType = 'website',
+  noindex = false,
   jsonLd,
 } = Astro.props;
 
@@ -33,6 +39,7 @@ const ogImageUrl = new URL(ogImage, Astro.site).toString();
 
     <title>{title}</title>
     <meta name="description" content={description} />
+    {noindex && <meta name="robots" content="noindex, follow" />}
 
     <meta name="keywords" content="PostgreSQL, SQLite, Turso, libSQL, database client, database explorer, SQL query tool, database browser, desktop database client, local database viewer" />
     <meta name="author" content="KreativeKorna Concepts" />
@@ -49,7 +56,7 @@ const ogImageUrl = new URL(ogImage, Astro.site).toString();
     <link rel="icon" href="/favicon.ico" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
 
-    <meta property="og:type" content="website" />
+    <meta property="og:type" content={ogType} />
     <meta property="og:locale" content="en_US" />
     <meta property="og:url" content={canonical} />
     <meta property="og:site_name" content="JustDB" />

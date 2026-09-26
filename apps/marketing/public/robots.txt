@@ -1,0 +1,6 @@
+# JustDB — https://justdb.kreativekorna.com
+# Everything here is public marketing content; let crawlers index all of it.
+User-agent: *
+Allow: /
+
+Sitemap: https://justdb.kreativekorna.com/sitemap-index.xml

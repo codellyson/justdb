@@ -1,0 +1,39 @@
+---
+// Reusable closing CTA for sub-pages. Mirrors the homepage's launch behaviour
+// (justdb:// deep link with a download fallback) but without the build-time
+// GitHub asset lookup — sub-pages just send downloads to the releases page.
+import Button from './Button.astro';
+import { LAUNCH_URL, RELEASES_URL } from '../lib/site';
+
+interface Props {
+  title?: string;
+  body?: string;
+  class?: string;
+}
+const {
+  title = 'Ready to see your database differently?',
+  body = 'Open JustDB and get straight to your data. No signup, free to use.',
+  class: className = '',
+} = Astro.props;
+---
+
+<section class={`border-t border-border ${className}`.trim()}>
+  <div class="mx-auto max-w-shell px-5 py-20 text-center sm:px-8 sm:py-28">
+    <h2
+      class="mx-auto max-w-2xl text-[clamp(1.9rem,4.6vw,3rem)] font-semibold leading-[1.08] tracking-[-0.03em] text-primary"
+      data-reveal
+    >
+      {title}
+    </h2>
+    <p class="mx-auto mt-5 max-w-lg text-[16px] leading-relaxed text-secondary" data-reveal>{body}</p>
+    <div class="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row" data-reveal>
+      <Button size="lg" href={LAUNCH_URL} data-fallback={RELEASES_URL} class="w-full sm:w-auto">
+        Open JustDB
+        <span class="transition-transform duration-200 group-hover:translate-x-0.5">→</span>
+      </Button>
+      <Button size="lg" variant="secondary" href={RELEASES_URL} external class="w-full sm:w-auto">
+        Download desktop app
+      </Button>
+    </div>
+  </div>
+</section>

@@ -1,5 +1,7 @@
 mod ai;
 mod cascade;
+mod d1;
+mod discovery;
 mod mcp;
 mod mutation;
 mod postgres;
@@ -101,7 +103,9 @@ async fn db_connect(
     config: DbConfig,
     state: State<'_, AppState>,
 ) -> CommandResult<ConnectResponse> {
-    let database = if config.db_type == DbType::Sqlite {
+    let database = if config.filepath.as_deref().is_some_and(|path| path.starts_with("d1://")) {
+        config.database.clone()
+    } else if config.db_type == DbType::Sqlite {
         // For SQLite the "database" label shown in the connection-status pill
         // is the file basename (or libsql hostname). Connections saved before
         // this was normalized hold the whole path in `database`, so take the
@@ -216,6 +220,55 @@ async fn db_health(
             idle_connections: 0,
         }
     })
+}
+
+#[tauri::command]
+async fn db_discover_local() -> Vec<discovery::LocalDatabase> {
+    discovery::discover_local_databases(std::iter::empty()).await
+}
+
+#[tauri::command]
+async fn db_discover_sqlite(
+    folder: Option<String>,
+    app: tauri::AppHandle,
+) -> CommandResult<Vec<discovery::LocalSqliteFile>> {
+    let roots = if let Some(folder) = folder {
+        let path = std::path::PathBuf::from(folder);
+        if !path.is_dir() {
+            return Err(CommandError::Query("The selected folder is not available.".into()));
+        }
+        vec![path]
+    } else {
+        let home = app
+            .path()
+            .home_dir()
+            .map_err(|e| CommandError::Query(e.to_string()))?;
+        [
+            "Desktop/workfolder/personal-projects",
+            "Desktop/workfolder",
+            "Desktop",
+            "Documents",
+            "Downloads",
+            "Projects",
+            "Developer",
+            "dev",
+            "code",
+            "workfolder",
+        ]
+        .into_iter()
+        .map(|name| home.join(name))
+        .collect()
+    };
+    tauri::async_runtime::spawn_blocking(move || discovery::discover_sqlite_files(roots))
+        .await
+        .map_err(|e| CommandError::Query(e.to_string()))
+}
+
+#[tauri::command]
+async fn db_d1_list(account_id: String, api_token: String) -> CommandResult<Vec<d1::D1Database>> {
+    d1::list_databases(&account_id, &api_token)
+        .await
+        .map_err(CommandError::Connection)
 }
 
 #[tauri::command]
@@ -1969,6 +2022,9 @@ pub fn run() {
             db_query,
             db_disconnect,
             db_health,
+            db_discover_local,
+            db_discover_sqlite,
+            db_d1_list,
             db_list_schemas,
             db_list_tables,
             db_table_rows,

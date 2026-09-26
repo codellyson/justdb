@@ -1,0 +1,103 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import Nav from '../../components/Nav.astro';
+import Footer from '../../components/Footer.astro';
+import Breadcrumb from '../../components/Breadcrumb.astro';
+import CtaBand from '../../components/CtaBand.astro';
+import PageScripts from '../../components/PageScripts.astro';
+import { LANDINGS } from '../../lib/landings';
+import { COMPARISONS } from '../../lib/comparisons';
+import { breadcrumbJsonLd, webPageJsonLd } from '../../lib/seo';
+
+const title = 'JustDB Use Cases — SQLite viewer, PostgreSQL GUI, Turso client';
+const description =
+  'What JustDB is for: a fast SQLite viewer for macOS, a minimalist PostgreSQL GUI, a Turso/libSQL desktop client — and a lightweight alternative to heavier tools.';
+const path = '/alternatives';
+
+const jsonLd = [
+  webPageJsonLd({ title, description, path }),
+  breadcrumbJsonLd([
+    { name: 'JustDB', path: '/' },
+    { name: 'Use cases', path },
+  ]),
+];
+---
+
+<Layout title={title} description={description} jsonLd={jsonLd}>
+  <Nav />
+
+  <main>
+    <section class="relative overflow-hidden border-b border-border">
+      <div class="bg-grid pointer-events-none absolute inset-x-0 top-0 h-[360px]" aria-hidden="true"></div>
+      <div class="relative mx-auto max-w-shell px-5 pb-14 pt-12 sm:px-8 sm:pt-16">
+        <Breadcrumb trail={[{ name: 'JustDB', path: '/' }, { name: 'Use cases' }]} />
+        <div class="mt-8 max-w-3xl">
+          <p class="text-[11px] font-medium uppercase tracking-[0.14em] text-muted" data-reveal>Use cases</p>
+          <h1
+            class="mt-3 text-[clamp(2.2rem,5.4vw,3.6rem)] font-semibold leading-[1.05] tracking-[-0.03em] text-primary"
+            data-reveal
+          >
+            One small app, a few jobs.
+          </h1>
+          <p class="mt-6 max-w-2xl text-[17px] leading-relaxed text-secondary" data-reveal>
+            JustDB is a native desktop client for PostgreSQL, SQLite and Turso.
+            Here is what people reach for it to do — pick the one that sounds like
+            your afternoon.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section class="border-b border-border">
+      <div class="mx-auto max-w-shell px-5 py-16 sm:px-8 sm:py-24">
+        <ul class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {LANDINGS.map((l) => (
+            <li data-reveal>
+              <a
+                href={`/alternatives/${l.slug}`}
+                class="group flex h-full flex-col rounded-xl border border-border bg-bg-secondary/40 p-7 transition-[transform,border-color] duration-300 hover:-translate-y-1 hover:border-border-strong"
+              >
+                <p class="text-[11px] font-medium uppercase tracking-[0.14em] text-muted">{l.eyebrow}</p>
+                <h2 class="mt-2 text-[18px] font-semibold tracking-tight text-primary">{l.h1.replace(/\.$/, '')}</h2>
+                <p class="mt-3 flex-1 text-[14px] leading-relaxed text-secondary">{l.lead.split('. ')[0]}.</p>
+                <span class="mt-5 inline-flex items-center gap-1.5 text-[14px] font-medium text-accent">
+                  Learn more
+                  <span class="transition-transform duration-200 group-hover:translate-x-0.5">→</span>
+                </span>
+              </a>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </section>
+
+    <!-- Switching from a heavier tool → point at the comparison pages. -->
+    <section>
+      <div class="mx-auto max-w-shell px-5 py-16 sm:px-8 sm:py-24">
+        <div class="max-w-2xl" data-reveal>
+          <p class="text-[11px] font-medium uppercase tracking-[0.14em] text-muted">Switching tools?</p>
+          <h2 class="mt-3 text-[clamp(1.6rem,3.4vw,2.3rem)] font-semibold leading-[1.1] tracking-[-0.025em] text-primary">
+            Coming from something heavier.
+          </h2>
+        </div>
+        <ul class="mt-8 flex flex-wrap gap-3" data-reveal>
+          {COMPARISONS.map((c) => (
+            <li>
+              <a
+                href={`/compare/${c.slug}`}
+                class="inline-flex items-center gap-2 rounded-full border border-border bg-bg-secondary/40 px-4 py-2 text-[14px] text-secondary transition-colors hover:border-border-strong hover:text-primary"
+              >
+                JustDB vs {c.competitor}
+                <span aria-hidden="true">→</span>
+              </a>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </section>
+  </main>
+
+  <CtaBand />
+  <Footer />
+  <PageScripts />
+</Layout>
