@@ -37,6 +37,7 @@ import { SmartCellDisplay } from './smart-cell-display';
 import { FormattedCell } from './formatted-cell';
 import { ColumnFilterPopover } from './column-filter-popover';
 import { applyFormatter } from '@/lib/formatter-presets';
+import { fitQueryColumns } from '@/lib/query-presentation';
 import type { Filter } from '@/lib/filters';
 import type { ColumnFormatter } from '@/lib/plugin-types';
 import {
@@ -125,6 +126,7 @@ export interface QueryResultGridProps {
   /** Grow to fill a flex-column parent instead of capping at a viewport-
    *  relative max-height. The parent must be `flex flex-col min-h-0`. */
   fillParent?: boolean;
+  fitColumns?: boolean;
   /** Called with the snapshot rows backing the currently-selected row keys. */
   onBulkExport?: (rows: any[]) => void;
   /** Stable key for layout persistence; usually the SQL string. */
@@ -391,6 +393,7 @@ export const QueryResultGrid = forwardRef<QueryResultGridHandle, QueryResultGrid
     onInspectRow,
     maxHeightCss,
     fillParent,
+    fitColumns = false,
     onBulkExport,
     layoutKey,
   } = props;
@@ -507,12 +510,24 @@ export const QueryResultGrid = forwardRef<QueryResultGridHandle, QueryResultGrid
     return out;
   }, [activeFormatters, columns, columnTypes]);
 
+  const scrollContainerRef = useRef<HTMLDivElement | null>(null);
+  const [viewportWidth, setViewportWidth] = useState(0);
+  useEffect(() => {
+    const element = scrollContainerRef.current;
+    if (!fitColumns || !element) return;
+    const observer = new ResizeObserver(() => setViewportWidth(element.clientWidth));
+    setViewportWidth(element.clientWidth);
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [fitColumns, isLoading]);
+
   // Resolved per-column widths: stored override → default-for-type.
   const resolvedWidths = useMemo(() => {
+    if (fitColumns) return fitQueryColumns(displayColumns, data, layout.widths, viewportWidth - (canEdit ? CHECKBOX_WIDTH : 0));
     const w: Record<string, number> = {};
     for (const c of displayColumns) w[c] = layout.widths[c] ?? defaultWidthForType(columnTypes[c]);
     return w;
-  }, [displayColumns, layout.widths, columnTypes]);
+  }, [displayColumns, layout.widths, columnTypes, fitColumns, data, viewportWidth, canEdit]);
 
   // CSS vars on the container expose each column's width as --cw-<idx>.
   // Cells use width: var(--cw-N), so width changes don't re-render a single
@@ -533,7 +548,7 @@ export const QueryResultGrid = forwardRef<QueryResultGridHandle, QueryResultGrid
   // Frozen column's effective left offset (after row-number + checkbox).
   const frozenLeft = canEdit ? CHECKBOX_WIDTH : 0;
 
-  const scrollContainerRef = useRef<HTMLDivElement | null>(null);
+
   // Expanded rows are dynamically sized; default rows stay at ROW_HEIGHT.
   // measureElement is only wired in when at least one row is expanded so the
   // virtualizer doesn't pay the ResizeObserver cost on every row otherwise.
@@ -1273,8 +1288,7 @@ export const QueryResultGrid = forwardRef<QueryResultGridHandle, QueryResultGrid
         }`}
         style={{
           maxHeight: fillParent ? undefined : (maxHeightCss ?? 'calc(100vh - 360px)'),
-          minHeight: 240,
-          willChange: 'scroll-position',
+          minHeight: fillParent ? 0 : 240,
           // `contain: paint` on the scroll container has been observed to
           // interact poorly with sticky headers in WebKit (the first
           // rows can render hidden behind the header even at scrollTop=0).
@@ -1384,7 +1398,7 @@ export const QueryResultGrid = forwardRef<QueryResultGridHandle, QueryResultGrid
           style={{ top: HEADER_HEIGHT + (canInsert ? ROW_HEIGHT : 0) }}
         >
           <span className="font-mono text-xs text-secondary">No rows</span>
-          {emptyHint && <span className="font-mono text-[11px] text-muted">{emptyHint}</span>}
+          {emptyHint && <span className="font-mono text-meta text-muted">{emptyHint}</span>}
         </div>
       )}
       {(canEdit || !!onBulkExport) && (
@@ -1580,7 +1594,7 @@ const HeaderCell = memo(function HeaderCell({
         )}
       </div>
       {columnType && (
-        <span className="text-[10px] text-muted font-mono truncate">{columnType}</span>
+        <span className="text-meta text-muted font-mono truncate">{columnType}</span>
       )}
       <div
         className="absolute top-0 right-0 bottom-0 w-1.5 cursor-col-resize opacity-0 group-hover:opacity-100 hover:bg-accent/40 active:bg-accent"
@@ -1778,7 +1792,7 @@ const ExpandedDetail = memo(function ExpandedDetail({
                 >
                   <span className="text-xs font-medium text-secondary">{col}</span>
                   {columnTypes[col] && (
-                    <span className="ml-1.5 text-[11px] font-mono text-muted">{columnTypes[col]}</span>
+                    <span className="ml-1.5 text-meta font-mono text-muted">{columnTypes[col]}</span>
                   )}
                 </th>
               ))}
@@ -1907,7 +1921,7 @@ function CellValueViewer({
     >
       <div className="flex items-center gap-2 px-3 py-2 border-b border-border">
         <span className="text-xs font-medium text-primary truncate">{column}</span>
-        {columnType && <span className="text-[11px] text-muted font-mono">{columnType}</span>}
+        {columnType && <span className="text-meta text-muted font-mono">{columnType}</span>}
         <span className="flex-1" />
         <button
           type="button"

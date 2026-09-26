@@ -5,6 +5,8 @@ interface ButtonProps extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>
   variant?: 'primary' | 'secondary' | 'danger' | 'ghost';
   size?: 'sm' | 'md' | 'lg';
   isLoading?: boolean;
+  /** Keep dense controls stationary while retaining color feedback. */
+  static?: boolean;
   children: React.ReactNode;
 }
 
@@ -17,7 +19,7 @@ const VARIANT = {
 } as const;
 
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(function Button(
-  { variant = 'primary', size = 'md', isLoading = false, className, children, ...props },
+  { variant = 'primary', size = 'md', isLoading = false, static: isStatic = false, className, children, ...props },
   ref
 ) {
   return (
@@ -26,7 +28,8 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(function 
       variant={VARIANT[variant]}
       size={size}
       loading={isLoading}
-      className={cn(size === 'sm' && 'text-sm', className)}
+      data-static={isStatic || undefined}
+      className={cn('app-button', size === 'sm' && 'text-sm', className)}
       {...props}
     >
       {children}

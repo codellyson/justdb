@@ -6,7 +6,6 @@ import { Select } from "./ui/select";
 import { DEFAULT_FORMATTERS } from "@/lib/default-plugins";
 import type { FormatterPreset, FormatterMatcher } from "@/lib/plugin-types";
 import { usePlugins } from "../hooks/use-plugins";
-import { ArrowRight } from 'lucide-react';
 import { Input, Switch } from '@codellyson/justui/react';
 
 interface FormatterSettingsProps {
@@ -38,7 +37,7 @@ const MATCHER_TYPE_OPTIONS: { value: FormatterMatcher["type"]; label: string }[]
 ];
 
 /** Reusable body (no Modal wrapper) so the Settings screen can embed it. */
-export const FormatterSettingsBody: React.FC = () => {
+export const FormatterSettingsBody: React.FC<{ embedded?: boolean }> = ({ embedded = false }) => {
   const { config, allFormatters, addFormatter, deleteFormatter, toggleBuiltIn } = usePlugins();
   const [showAddForm, setShowAddForm] = useState(false);
   const [newName, setNewName] = useState("");
@@ -61,23 +60,21 @@ export const FormatterSettingsBody: React.FC = () => {
 
   return (
     <div className="space-y-4">
-        <div className="text-xs text-secondary">
-          Formatters automatically transform how cell values are displayed in data tables.
-        </div>
+        {!embedded && <p className="mt-1 text-xs leading-relaxed text-muted">Change how values appear without changing stored data.</p>}
 
         <div className="space-y-2">
-          <div className="text-xs font-medium text-secondary">Built-in Formatters</div>
+          <div className="text-sm font-medium text-secondary">Built-in</div>
           {DEFAULT_FORMATTERS.map((f) => {
             const isDisabled = config.disabledBuiltIns.includes(f.id);
             return (
               <div
                 key={f.id}
-                className="flex items-center justify-between p-2.5 border border-border rounded-md"
+                className="flex items-center justify-between gap-3 border-b border-border py-3 last:border-0"
               >
-                <div>
+                <div className="min-w-0">
                   <div className="text-sm font-medium text-primary">{f.name}</div>
-                  <div className="text-xs text-muted">
-                    {f.matcher.type}: {f.matcher.value} <ArrowRight className="inline h-3 w-3 align-middle" /> {f.preset}
+                  <div className="mt-1 text-meta leading-relaxed text-muted">
+                    {f.description}
                   </div>
                 </div>
                 <Switch
@@ -93,18 +90,18 @@ export const FormatterSettingsBody: React.FC = () => {
 
         {allFormatters.filter((f) => !f.isBuiltIn).length > 0 && (
           <div className="space-y-2">
-            <div className="text-xs font-medium text-secondary">Custom Formatters</div>
+            <div className="text-sm font-medium text-secondary">Custom</div>
             {allFormatters
               .filter((f) => !f.isBuiltIn)
               .map((f) => (
                 <div
                   key={f.id}
-                  className="flex items-center justify-between p-2.5 border border-border rounded-md"
+                  className="flex items-center justify-between gap-3 border-b border-border py-3 last:border-0"
                 >
                   <div>
                     <div className="text-sm font-medium text-primary">{f.name}</div>
-                    <div className="text-xs text-muted">
-                      {f.matcher.type}: {f.matcher.value} <ArrowRight className="inline h-3 w-3 align-middle" /> {f.preset}
+                    <div className="mt-1 text-meta leading-relaxed text-muted">
+                      {f.description}
                     </div>
                   </div>
                   <button
@@ -120,7 +117,7 @@ export const FormatterSettingsBody: React.FC = () => {
 
         {showAddForm ? (
           <div className="space-y-3 border border-border rounded-md p-3 bg-bg-secondary">
-            <div className="text-xs font-medium text-secondary">New Formatter</div>
+            <div className="text-sm font-medium text-secondary">New Formatter</div>
             <Input
               value={newName}
               onChange={setNewName}
@@ -169,7 +166,7 @@ export const FormatterSettingsBody: React.FC = () => {
           </div>
         ) : (
           <Button variant="secondary" size="sm" onClick={() => setShowAddForm(true)}>
-            + Add Custom Formatter
+            + Add formatter
           </Button>
         )}
     </div>

@@ -153,7 +153,7 @@ export const TablePicker: React.FC<TablePickerProps> = ({ isOpen, onClose, table
             ))
           )}
         </div>
-        <div className="px-4 py-2 border-t border-border bg-bg-secondary/40 text-[11px] text-muted flex items-center gap-3">
+        <div className="px-4 py-2 border-t border-border bg-bg-secondary/40 text-meta text-muted flex items-center gap-3">
           <span><kbd className="px-1 py-0.5 bg-bg rounded-sm border border-border">↑↓</kbd> navigate</span>
           <span><kbd className="px-1 py-0.5 bg-bg rounded-sm border border-border">Enter</kbd> open</span>
           <span><kbd className="px-1 py-0.5 bg-bg rounded-sm border border-border">Esc</kbd> close</span>

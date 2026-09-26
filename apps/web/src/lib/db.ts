@@ -1,3 +1,5 @@
+import { getExperienceMode } from './app-settings';
+import { splitSqlStatements } from './sql-statements';
 /**
  * Typed Tauri command client.
  *
@@ -14,7 +16,7 @@
 
 import { invoke as tauriInvoke, type InvokeArgs } from "@tauri-apps/api/core";
 
-import { classifyQuery, requiresTypedConfirmation } from "./query-classifier";
+import { classifyQuery, classifyQueryBatch, shouldConfirmQuery, requiresTypedConfirmation } from "./query-classifier";
 import type { DBConfig, SavedConnection } from "@/types";
 import type { Filter } from "./filters";
 import type { MutationRequest } from "./mutation";
@@ -373,33 +375,40 @@ async function runQuery(
   confirmed = false,
 ): Promise<RunQueryConfirmation | RunQueryResult> {
   const sid = requireSession();
-  const classification = classifyQuery(query);
-  if (classification.kind === "blocked" || classification.kind === "unknown") {
-    throw new Error(
-      classification.reason ||
-        `Statements of type ${classification.statement || "(unknown)"} are not allowed`,
-    );
-  }
-  if (
-    (classification.kind === "write" || classification.kind === "ddl") &&
-    !confirmed
-  ) {
+  const classification = classifyQueryBatch(query);
+  if (!classification.statement) throw new Error('Enter a SQL statement to run.');
+  if (!confirmed && shouldConfirmQuery(classification, getExperienceMode())) {
     return {
       needsConfirmation: true,
       preview: query,
       classification: {
-        kind: classification.kind,
+        kind: classification.kind === "ddl" ? "ddl" : "write",
         statement: classification.statement,
         isBulkWrite: classification.isBulkWrite,
         requiresTypedConfirmation: requiresTypedConfirmation(classification),
       },
     };
   }
-  const result = await invoke<{
-    rows: any[];
-    executionTime: number;
-    fields: any[];
-  }>("db_run_query", { sessionId: sid, sql: query });
+  let result: { rows: any[]; executionTime: number; fields: any[] } = { rows: [], executionTime: 0, fields: [] };
+  let elapsed = 0;
+  let openedTransaction = false;
+  const statements = splitSqlStatements(query).filter(s => classifyQuery(s.text).statement);
+  try {
+    for (const statement of statements) {
+      result = await invoke<typeof result>('db_run_query', { sessionId: sid, sql: statement.text });
+      elapsed += result.executionTime;
+      const keyword = classifyQuery(statement.text).statement;
+      if (keyword === 'BEGIN' || keyword === 'START') openedTransaction = true;
+      if (['COMMIT', 'END'].includes(keyword) || (keyword === 'ROLLBACK' && !/\bTO\b/i.test(statement.text))) openedTransaction = false;
+    }
+  } catch (error) {
+    if (openedTransaction && statements.length > 1) {
+      try { await invoke('db_run_query', { sessionId: sid, sql: 'ROLLBACK' }); }
+      catch (rollbackError) { throw new Error(`${String(error)}; rollback failed: ${String(rollbackError)}`); }
+    }
+    throw error;
+  }
+  result.executionTime = elapsed;
   return {
     ...result,
     classification: {

@@ -50,7 +50,7 @@ function SettingsWorkspace() {
 
   return (
     <>
-      <div className={open && docked ? 'min-w-0 lg:mr-[460px]' : 'min-w-0'}>
+      <div className={`settings-workspace min-w-0 ${open && docked ? 'lg:mr-[460px]' : ''}`}>
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/query" element={<Query />} />

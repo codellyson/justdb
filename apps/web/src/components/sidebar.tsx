@@ -102,7 +102,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       <div className="flex-1 overflow-y-auto p-3 pl-0">
         {schemas && schemas.length > 1 && onSchemaChange && (
           <div className="mb-3">
-            <label className="block text-[10px] uppercase tracking-wider font-semibold text-muted mb-1.5 px-1">
+            <label className="block text-meta uppercase tracking-wider font-semibold text-muted mb-1.5 px-1">
               Schema
             </label>
             <div className="relative">
@@ -136,7 +136,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   <Tooltip label="Batch export tables">
                     <button
                       onClick={(e) => { e.stopPropagation(); onBatchExport(); }}
-                      className="p-1 text-muted/0 group-hover/section:text-muted hover:!text-accent rounded-sm transition-all"
+                      className="p-1 text-muted/0 group-hover/section:text-muted hover:!text-accent rounded-sm transition-colors"
                       aria-label="Batch export tables"
                     >
                       <Download className="h-3.5 w-3.5" />
@@ -213,7 +213,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         <Tooltip label="Delete saved query">
                           <button
                             onClick={(e) => { e.stopPropagation(); onDeleteSavedQuery(q.id); }}
-                            className="p-1 text-muted/0 group-hover:text-muted hover:!text-danger transition-all"
+                            className="p-1 text-muted/0 group-hover:text-muted hover:!text-danger transition-colors"
                             aria-label="Delete saved query"
                           >
                             <X className="h-3 w-3" />
@@ -243,7 +243,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       <Code2 className="h-3.5 w-3.5 mt-0.5 flex-shrink-0 text-muted group-hover:text-secondary transition-colors" />
                       <div className="min-w-0">
                         <div className="font-medium text-secondary group-hover:text-primary truncate transition-colors">{fn.name}</div>
-                        <div className="text-[11px] text-muted font-mono truncate">
+                        <div className="text-meta text-muted font-mono truncate">
                           ({fn.arguments}) <ArrowRight className="inline h-3 w-3 align-middle" /> {fn.return_type}
                         </div>
                       </div>
@@ -256,7 +256,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         )}
       </div>
       {version && (
-        <div className="border-t border-border px-3 py-2 text-[11px] text-muted font-mono">
+        <div className="border-t border-border px-3 py-2 text-meta text-muted font-mono">
           v{version}
         </div>
       )}
@@ -279,7 +279,7 @@ const SidebarSection: React.FC<{
     <div className="flex items-center group/section">
       <button
         onClick={onToggle}
-        className="flex-1 flex items-center gap-1 py-1.5 px-1.5 text-[11px] uppercase tracking-wider font-semibold text-muted hover:text-secondary transition-colors"
+        className="flex-1 flex items-center gap-1 py-1.5 px-1.5 text-meta uppercase tracking-wider font-semibold text-muted hover:text-secondary transition-colors"
         aria-expanded={isExpanded}
       >
         <ChevronRight className={`h-3 w-3 text-muted/60 transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`} />
@@ -291,7 +291,7 @@ const SidebarSection: React.FC<{
         <Tooltip label={actionLabel || "Add"}>
           <button
             onClick={(e) => { e.stopPropagation(); onAction(); }}
-            className="p-1 text-muted/0 group-hover/section:text-muted hover:!text-accent rounded-sm transition-all"
+            className="p-1 text-muted/0 group-hover/section:text-muted hover:!text-accent rounded-sm transition-colors"
             aria-label={actionLabel || "Add"}
           >
             <Plus className="h-3.5 w-3.5" />
@@ -299,6 +299,8 @@ const SidebarSection: React.FC<{
         </Tooltip>
       )}
     </div>
-    {isExpanded && <div className="mt-0.5 ml-1">{children}</div>}
+    <div className="sidebar-section-content" data-expanded={isExpanded} aria-hidden={!isExpanded} inert={!isExpanded}>
+      <div className="min-h-0 overflow-hidden"><div className="pt-0.5 ml-1">{children}</div></div>
+    </div>
   </div>
 );

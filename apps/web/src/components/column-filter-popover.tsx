@@ -197,7 +197,7 @@ export const ColumnFilterPopover: React.FC<ColumnFilterPopoverProps> = ({
             onClear();
             onClose();
           }}
-          className="text-[11px] text-muted hover:text-primary px-1.5 py-0.5 transition-colors"
+          className="text-meta text-muted hover:text-primary px-1.5 py-0.5 transition-colors"
         >
           Clear
         </button>
@@ -205,14 +205,14 @@ export const ColumnFilterPopover: React.FC<ColumnFilterPopoverProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="px-2 py-1 text-[11px] font-medium text-secondary hover:text-primary hover:bg-bg-secondary rounded-sm transition-colors"
+            className="px-2 py-1 text-meta font-medium text-secondary hover:text-primary hover:bg-bg-secondary rounded-sm transition-colors"
           >
             Cancel
           </button>
           <button
             type="button"
             onClick={handleApply}
-            className="px-2.5 py-1 text-[11px] font-medium text-[rgb(var(--accent-text))] bg-accent hover:bg-accent-hover rounded-sm transition-colors"
+            className="px-2.5 py-1 text-meta font-medium text-[rgb(var(--accent-text))] bg-accent hover:bg-accent-hover rounded-sm transition-colors"
           >
             Apply
           </button>

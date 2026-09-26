@@ -117,7 +117,7 @@ export const ConnectionSelector: React.FC<ConnectionSelectorProps> = ({
                     {databaseName ?? label}
                   </span>
                 </div>
-                <p className="text-[11px] text-muted mt-1">
+                <p className="text-xs text-muted mt-1">
                   {tableCount !== undefined && tableCount > 0 && (
                     <>{tableCount} {tableCount === 1 ? 'table' : 'tables'}</>
                   )}

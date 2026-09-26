@@ -1,5 +1,6 @@
 
 import React from 'react';
+import { PencilLine, ArrowRight } from 'lucide-react';
 import { Button } from './ui/button';
 import { usePendingChanges } from '../contexts/pending-changes-context';
 
@@ -16,25 +17,26 @@ export const PendingChangesBar: React.FC<PendingChangesBarProps> = ({ onOpenRevi
 
   return (
     <div
-      role="status"
-      className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40 flex items-center gap-3 px-4 py-2.5 bg-bg border border-border rounded-lg shadow-lg shadow-black/20"
+      aria-label="Pending changes"
+      className="pending-changes floating-surface fixed bottom-4 left-1/2 -translate-x-1/2 z-40 flex max-w-[calc(100vw-2rem)] flex-wrap items-center justify-center gap-4 p-3 bg-bg border border-border rounded-xl"
     >
-      <span className="text-sm text-primary font-medium">
-        {count} {count === 1 ? 'change' : 'changes'} pending
-      </span>
+      <div className="flex min-w-0 items-center gap-2.5">
+        <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-accent/10 text-accent"><PencilLine className="size-4" aria-hidden="true" /></span>
+        <div className="min-w-0">
+          <p role="status" className="text-sm text-primary font-medium tabular-nums">{count} {count === 1 ? 'change' : 'changes'} pending</p>
+          <p className="max-w-48 truncate text-xs text-muted" title={`${target.schema}.${target.table}`}>{target.table} · Not saved yet</p>
+        </div>
+      </div>
       <div className="flex items-center gap-1.5">
         <Button
-          variant="secondary"
+          variant="ghost"
           size="sm"
           onClick={() => pending.discardTable({ schema: target.schema, table: target.table })}
         >
           Discard
         </Button>
-        <Button variant="secondary" size="sm" onClick={onOpenReview}>
-          Review SQL
-        </Button>
         <Button variant="primary" size="sm" onClick={onOpenReview}>
-          Save
+          Review & save <ArrowRight className="size-3.5" aria-hidden="true" />
         </Button>
       </div>
     </div>

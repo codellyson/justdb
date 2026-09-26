@@ -1,6 +1,7 @@
 
 import React, { useEffect } from "react";
 import { X } from 'lucide-react';
+import { useMotionPresence } from '../hooks/use-motion-presence';
 
 interface MobileMenuProps {
   isOpen: boolean;
@@ -13,6 +14,7 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({
   onClose,
   children,
 }) => {
+  const { mounted, visible } = useMotionPresence(isOpen, 280);
   useEffect(() => {
     if (!isOpen) return;
 
@@ -29,16 +31,16 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({
     };
   }, [isOpen, onClose]);
 
-  if (!isOpen) return null;
+  if (!mounted) return null;
 
   return (
-    <div className="fixed inset-0 z-40 md:hidden">
+    <div className="mobile-workspace-menu fixed inset-0 z-40 md:hidden" data-open={visible} aria-hidden={!isOpen} inert={!isOpen}>
       <div
-        className="fixed inset-0 bg-black/40 backdrop-blur-sm"
+        className="mobile-workspace-backdrop fixed inset-0 bg-black/40"
         onClick={onClose}
         aria-hidden="true"
       />
-      <div className="fixed inset-y-0 left-0 w-[280px] z-50 bg-bg border-r border-border overflow-y-auto shadow-lg">
+      <div className="mobile-workspace-drawer fixed inset-y-0 left-0 w-[280px] z-50 bg-bg border-r border-border overflow-y-auto shadow-lg">
         <div className="flex items-center justify-between px-4 py-3 border-b border-border">
           <span className="text-sm font-semibold text-primary">JustDB</span>
           <button

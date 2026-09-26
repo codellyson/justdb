@@ -4,6 +4,7 @@ import { useConnection } from '../contexts/connection-context';
 import { ConnectionForm } from '../components/connection-form';
 import { SavedConnections } from '../components/saved-connections';
 import { Button } from '../components/ui/button';
+import { AnimatedViews } from '../components/ui/animated-views';
 import type { DBConfig } from '../types';
 import { db, type LocalDatabase, type LocalSqliteFile } from '../lib/db';
 import { sqliteDisplayName } from '../lib/connection-url';
@@ -152,7 +153,7 @@ export function Connections() {
   );
 
   return (
-    <div className="flex min-h-screen flex-col bg-bg">
+    <div className="connections-page flex min-h-screen flex-col bg-bg">
       <header className="flex h-16 shrink-0 items-center justify-between border-b border-border px-5 sm:px-10">
         <div className="flex min-w-0 items-center gap-3">
           <img src="/logo.svg" alt="" width={28} height={28} className="shrink-0" />
@@ -172,9 +173,10 @@ export function Connections() {
       </header>
       <main className="w-full flex-1 px-5 pb-10 pt-12 sm:px-8 lg:pt-14">
         <div className="mx-auto w-full max-w-6xl">
-            <div className="mx-auto mb-8 flex max-w-xl flex-wrap items-start justify-between gap-4">
+            <div className="connection-intro mx-auto mb-8 flex max-w-xl flex-wrap items-start justify-between gap-5">
               <div>
-                <h1 className="text-2xl font-bold tracking-tight text-primary sm:text-3xl">Connect to a database</h1>
+                <p className="mb-3 text-xs font-medium uppercase tracking-[0.14em] text-muted">Your workspace</p>
+                <h1 className="text-2xl font-semibold tracking-tight text-primary sm:text-3xl">Connect to a database</h1>
                 <p className="mt-2 text-sm text-secondary">Jump back into a saved connection, or open a new one.</p>
               </div>
               {view === 'saved' ? (
@@ -188,12 +190,14 @@ export function Connections() {
               )}
             </div>
 
-            <div hidden={view !== 'saved'} className="mx-auto max-w-xl space-y-4">
+            <div className="connection-stage mx-auto max-w-xl">
+            <AnimatedViews active={view}>
+            <div data-active={view === 'saved'} aria-hidden={view !== 'saved'} inert={view !== 'saved'} className="space-y-4">
                 <SavedConnections />
-                <section className="rounded-xl border border-dashed border-border bg-bg-secondary/20 px-5 py-5" aria-label="Detected local databases">
+                <section className="rounded-xl border border-border bg-bg-secondary/20 px-5 py-5" aria-label="Detected local databases">
                   <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
                     <h2 className="flex items-center gap-2 text-sm font-semibold text-primary">
-                      <span className="size-2 rounded-full bg-emerald-400" aria-hidden="true" />
+                      <span className={`size-2 rounded-full ${detected.length > 0 || sqliteFiles.length > 0 ? 'bg-success' : 'bg-border'}`} aria-hidden="true" />
                       Running on this machine
                     </h2>
                     <div className="flex items-center gap-2">
@@ -234,7 +238,7 @@ export function Connections() {
                                   <ConnectorLogo kind={file.source === 'd1-local' ? 'd1' : 'sqlite'} className="size-4 shrink-0" />
                                   {file.source === 'd1-local' ? `D1 local · ${file.project ?? 'project'}` : file.name}
                                 </p>
-                                <p className="text-[11px] font-mono text-muted truncate" title={file.path}>{file.path}</p>
+                                <p className="text-meta font-mono text-muted truncate" title={file.path}>{file.path}</p>
                               </div>
                               <Button
                                 type="button"
@@ -255,7 +259,7 @@ export function Connections() {
                         </p>
                       )}
                       {sqliteFiles.some((file) => file.source === 'd1-local') && (
-                        <p className="mt-2 text-[11px] text-muted">Local D1 state is separate from Cloudflare's remote database and opens read-only.</p>
+                        <p className="mt-2 text-xs text-muted">Local D1 state is separate from Cloudflare's remote database and opens read-only.</p>
                       )}
                       {sqliteScanError && sqliteFiles.length > 0 && (
                         <p className="mt-2 text-xs text-muted">Refresh failed; showing the previous results.</p>
@@ -275,7 +279,7 @@ export function Connections() {
                         <div key={instance.port} className="flex items-center justify-between gap-3 rounded-lg border border-border bg-bg-secondary px-3 py-2.5">
                           <div className="min-w-0">
                             <p className="flex items-center gap-1.5 text-sm font-medium text-primary"><ConnectorLogo kind="postgresql" className="size-4" />PostgreSQL</p>
-                            <p className="text-[11px] font-mono text-muted">{instance.host}:{instance.port}</p>
+                            <p className="text-meta font-mono text-muted">{instance.host}:{instance.port}</p>
                           </div>
                           <Button
                             type="button"
@@ -287,7 +291,7 @@ export function Connections() {
                           </Button>
                         </div>
                       ))}
-                      <p className="col-span-full pt-1 text-[11px] text-muted">Saved details are reused when available. Check the suggested values before connecting.</p>
+                      <p className="col-span-full pt-1 text-xs text-muted">Saved details are reused when available. Check the suggested values before connecting.</p>
                       {scanError && <p className="text-xs text-muted">Refresh failed; showing the previous results.</p>}
                     </div>
                   ) : scanning ? (
@@ -299,7 +303,7 @@ export function Connections() {
                   )}
                 </section>
             </div>
-            <div hidden={view !== 'new'} className="mx-auto max-w-xl">
+            <div data-active={view === 'new'} aria-hidden={view !== 'new'} inert={view !== 'new'}>
               <ConnectionForm
                 onConnect={handleConnect}
                 onConnectSaved={handleConnectSaved}
@@ -312,6 +316,8 @@ export function Connections() {
                 detectedSqlite={selectedSqlite}
               />
             </div>
+            </AnimatedViews>
+            </div>
 
             {error && (
               <div className="mt-4 p-3 bg-danger/10 border border-danger/20 rounded-md text-danger text-sm">
@@ -321,7 +327,7 @@ export function Connections() {
 
         </div>
       </main>
-      <footer className="border-t border-border px-5 py-5 text-center text-[11px] text-muted">
+      <footer className="border-t border-border px-5 py-5 text-center text-meta text-muted">
         Built by <a href="https://kreativekorna.com" target="_blank" rel="noopener noreferrer" className="font-medium text-accent hover:underline">KreativeKorna Concepts</a>
       </footer>
     </div>

@@ -93,3 +93,13 @@ export const setTelemetryNoticeSeen = () => {
     // ignore
   }
 };
+
+export type ExperienceMode = 'guided' | 'expert';
+export function getExperienceMode(): ExperienceMode {
+  try { return localStorage.getItem('justdb-experience-mode') === 'expert' ? 'expert' : 'guided'; }
+  catch { return 'guided'; }
+}
+export function setExperienceMode(mode: ExperienceMode) {
+  localStorage.setItem('justdb-experience-mode', mode);
+  window.dispatchEvent(new Event(EDITOR_SETTINGS_EVENT));
+}

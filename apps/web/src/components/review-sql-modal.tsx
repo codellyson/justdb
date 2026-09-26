@@ -1,3 +1,4 @@
+import { getExperienceMode } from '@/lib/app-settings';
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Modal } from './ui/modal';
@@ -37,6 +38,7 @@ export const ReviewSqlModal: React.FC<ReviewSqlModalProps> = ({
   schema,
   table,
 }) => {
+  const expert = getExperienceMode() === 'expert';
   const { databaseType } = useConnection();
   const { addToast } = useToast();
   const pending = usePendingChanges();
@@ -116,7 +118,7 @@ export const ReviewSqlModal: React.FC<ReviewSqlModalProps> = ({
       setAcknowledged(false);
       return;
     }
-    if (cascadeNodes.length === 0) {
+    if (expert || cascadeNodes.length === 0) {
       setCascadeResult(null);
       setCascadeError(null);
       return;
@@ -124,7 +126,7 @@ export const ReviewSqlModal: React.FC<ReviewSqlModalProps> = ({
     setExtendedAttempted(false);
     setAcknowledged(false);
     runCascade(false);
-  }, [isOpen, cascadeNodes, runCascade]);
+  }, [isOpen, cascadeNodes, runCascade, expert]);
 
   const hasCascadeImpact =
     !!cascadeResult &&
@@ -133,7 +135,7 @@ export const ReviewSqlModal: React.FC<ReviewSqlModalProps> = ({
       cascadeResult.blocked.length > 0 ||
       cascadeResult.truncated);
 
-  const requiresAck = hasCascadeImpact || !!cascadeError;
+  const requiresAck = !expert && (hasCascadeImpact || !!cascadeError);
 
   const handleSave = async () => {
     if (requests.length === 0) {
@@ -177,7 +179,7 @@ export const ReviewSqlModal: React.FC<ReviewSqlModalProps> = ({
           <span className="text-muted ml-auto">runs in a single transaction</span>
         </div>
 
-        {deleteRequests.length > 0 && (
+        {!expert && deleteRequests.length > 0 && (
           <CascadeImpactPanel
             loading={cascadeLoading}
             error={cascadeError}

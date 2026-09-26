@@ -1,3 +1,4 @@
+import { useInstalledProviders } from '@/lib/connector-catalog';
 
 import React, { useEffect, useState } from 'react';
 import { open as openFileDialog } from '@tauri-apps/plugin-dialog';
@@ -37,6 +38,7 @@ export const ConnectionForm: React.FC<ConnectionFormProps> = ({
   detectedConnection,
   detectedSqlite,
 }) => {
+  const installed = useInstalledProviders();
   const [dbType, setDbType] = useState<DbType>('postgresql');
   const [mode, setMode] = useState<InputMode>('url');
   const [connectionUrl, setConnectionUrl] = useState('');
@@ -62,6 +64,10 @@ export const ConnectionForm: React.FC<ConnectionFormProps> = ({
   const [d1Loaded, setD1Loaded] = useState(false);
   const [d1Search, setD1Search] = useState('');
   const [d1Manual, setD1Manual] = useState(false);
+  useEffect(() => {
+    if (dbType === 'd1' && !installed.includes('d1')) { setDbType('sqlite'); onDbTypeChange('sqlite'); setMode('fields'); }
+    if (dbType === 'sqlite' && !installed.includes('turso')) setMode('fields');
+  }, [installed.join(','), dbType]);
 
   const selectedD1 = d1Databases.find((item) => item.uuid === d1DatabaseId.trim());
   const visibleD1Databases = d1Databases.filter((item) =>
@@ -341,25 +347,30 @@ export const ConnectionForm: React.FC<ConnectionFormProps> = ({
     <div className="overflow-hidden rounded-xl border border-border bg-bg-secondary/50">
       <div className="flex min-h-16 items-center justify-between gap-3 border-b border-border px-5 py-3">
         <h3 className="text-sm font-semibold text-primary">New connection</h3>
-        {dbType !== 'd1' && <div className="flex shrink-0 rounded-lg border border-border bg-bg p-1">
+        {dbType !== 'd1' && <div className="connection-segments relative grid shrink-0 grid-cols-2 rounded-lg border border-border bg-bg p-1" role="group" aria-label="Connection input mode">
+          <span className="segment-indicator" aria-hidden="true" style={{ transform: `translateX(${mode === 'url' ? 0 : 100}%)` }} />
           <button
             type="button"
+            aria-pressed={mode === 'url'}
+            disabled={dbType === 'sqlite' && !installed.includes('turso')}
+            title={dbType === 'sqlite' && !installed.includes('turso') ? 'Install Turso / libSQL in Settings → Connectors' : undefined}
             onClick={() => setMode('url')}
-            className={`min-h-8 rounded-md px-3 py-1 text-xs font-medium transition-colors ${
+            className={`relative min-h-8 rounded-md px-3 py-1 text-xs font-medium transition-colors ${
               mode === 'url'
-                ? 'bg-accent/15 text-accent'
-                : 'text-secondary hover:text-primary hover:bg-bg-secondary'
+                ? 'text-accent'
+                : 'text-secondary hover:text-primary'
             }`}
           >
-            {dbType === 'sqlite' ? 'Remote URL' : 'URL'}
+            {dbType === 'sqlite' ? 'Turso / libSQL' : 'URL'}
           </button>
           <button
             type="button"
+            aria-pressed={mode === 'fields'}
             onClick={() => setMode('fields')}
-            className={`min-h-8 rounded-md px-3 py-1 text-xs font-medium transition-colors ${
+            className={`relative min-h-8 rounded-md px-3 py-1 text-xs font-medium transition-colors ${
               mode === 'fields'
-                ? 'bg-accent/15 text-accent'
-                : 'text-secondary hover:text-primary hover:bg-bg-secondary'
+                ? 'text-accent'
+                : 'text-secondary hover:text-primary'
             }`}
           >
             {dbType === 'sqlite' ? 'Local file' : 'Fields'}
@@ -371,13 +382,13 @@ export const ConnectionForm: React.FC<ConnectionFormProps> = ({
           { type: 'postgresql', label: 'PostgreSQL' },
           { type: 'sqlite', label: 'SQLite' },
           { type: 'd1', label: 'Cloudflare D1' },
-        ] as const).map((connector) => (
+        ] as const).filter(connector => connector.type !== 'd1' || installed.includes('d1')).map((connector) => (
           <button
             key={connector.type}
             type="button"
             aria-pressed={dbType === connector.type}
             onClick={() => handleDbTypeChange(connector.type)}
-            className={`flex min-h-16 min-w-0 flex-col items-start justify-between rounded-lg border px-2.5 py-2 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent sm:px-3 ${
+            className={`connector-choice flex min-h-16 min-w-0 flex-col items-start justify-between rounded-lg border px-2.5 py-2 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent sm:px-3 ${
               dbType === connector.type
                 ? 'border-accent bg-accent/10 text-primary'
                 : 'border-border bg-bg text-secondary hover:bg-bg-secondary hover:text-primary'
@@ -405,7 +416,7 @@ export const ConnectionForm: React.FC<ConnectionFormProps> = ({
                 <div className="flex items-center justify-between gap-3 rounded-md border border-border bg-bg-secondary px-3 py-2">
                   <div className="min-w-0">
                     <p className="text-xs font-medium text-primary">Cloudflare account</p>
-                    <p className="font-mono text-[11px] text-muted truncate">{d1AccountId.slice(0, 8)}…{d1AccountId.slice(-4)}</p>
+                    <p className="font-mono text-meta text-muted truncate">{d1AccountId.slice(0, 8)}…{d1AccountId.slice(-4)}</p>
                   </div>
                   <button
                     type="button"
@@ -644,7 +655,7 @@ export const ConnectionForm: React.FC<ConnectionFormProps> = ({
             <div className="flex items-center justify-between gap-3 px-3.5 py-3">
               <div>
                 <p className="text-xs font-semibold text-primary">Require SSL</p>
-                <p className="mt-0.5 text-[11px] text-muted">Recommended for remote hosts</p>
+                <p className="mt-0.5 text-xs text-muted">Recommended for remote hosts</p>
               </div>
               <Switch checked={useSSL} onChange={(checked) => setUseSSL(checked === true)} disabled={isConnecting} size="sm" aria-label="Require SSL" />
             </div>
@@ -652,7 +663,7 @@ export const ConnectionForm: React.FC<ConnectionFormProps> = ({
           <div className={`flex items-center justify-between gap-3 px-3.5 py-3 ${dbType !== 'sqlite' && dbType !== 'd1' ? 'border-t border-border' : ''}`}>
             <div>
               <p className="text-xs font-semibold text-primary">Save this connection</p>
-              <p className="mt-0.5 text-[11px] text-muted">Shows up under Saved connections</p>
+              <p className="mt-0.5 text-xs text-muted">Shows up under Saved connections</p>
             </div>
             <Switch checked={saveConnection} onChange={(checked) => setSaveConnection(checked === true)} disabled={isConnecting} size="sm" aria-label="Save this connection" />
           </div>

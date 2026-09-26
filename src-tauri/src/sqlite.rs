@@ -662,6 +662,32 @@ mod tests {
     use super::*;
 
     #[tokio::test]
+    async fn editor_query_supports_transaction_commit_rollback_and_ddl() {
+        let dir = std::env::temp_dir().join(format!("justdb-editor-tx-{}", uuid::Uuid::new_v4()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let config = DbConfig {
+            db_type: crate::postgres::DbType::Sqlite, host: String::new(), port: 0,
+            database: "fixture".into(), username: String::new(), password: String::new(),
+            ssl: false, filepath: Some(dir.join("fixture.sqlite").to_string_lossy().into_owned()),
+            auth_token: None, read_only: false,
+        };
+        let db = SqliteConnection::connect(config).await.unwrap();
+        db.query("CREATE TABLE entries (id INTEGER)").await.unwrap();
+        db.query("BEGIN").await.unwrap();
+        db.query("INSERT INTO entries VALUES (1)").await.unwrap();
+        db.query("COMMIT").await.unwrap();
+        assert_eq!(db.query("SELECT id FROM entries").await.unwrap().rows.len(), 1);
+        db.query("BEGIN").await.unwrap();
+        db.query("DELETE FROM entries").await.unwrap();
+        db.query("ROLLBACK").await.unwrap();
+        assert_eq!(db.query("SELECT id FROM entries").await.unwrap().rows.len(), 1);
+        db.query("DROP TABLE entries").await.unwrap();
+        assert!(db.query("SELECT * FROM entries").await.is_err());
+        drop(db);
+        std::fs::remove_dir_all(dir).unwrap();
+    }
+
+    #[tokio::test]
     async fn read_only_local_connection_rejects_writes() {
         let dir = std::env::temp_dir().join(format!("justdb-d1-readonly-{}", uuid::Uuid::new_v4()));
         std::fs::create_dir_all(&dir).unwrap();

@@ -37,12 +37,12 @@ const ChatMarkdown: React.FC<{ children: string }> = ({ children }) => (
       pre: ({ children }) => <pre className="mb-2 overflow-x-auto">{children}</pre>,
       code: ({ className, children }) =>
         /language-/.test(className || '') ? (
-          <code className="block font-mono text-[11px] bg-bg-secondary rounded-sm p-2 overflow-x-auto whitespace-pre">{children}</code>
+          <code className="block font-mono text-meta bg-bg-secondary rounded-sm p-2 overflow-x-auto whitespace-pre">{children}</code>
         ) : (
           <code className="font-mono text-[12px] bg-bg-secondary rounded-sm px-1 py-0.5">{children}</code>
         ),
       table: ({ children }) => (
-        <div className="overflow-x-auto mb-2"><table className="text-[11px] border-collapse">{children}</table></div>
+        <div className="overflow-x-auto mb-2"><table className="text-meta border-collapse">{children}</table></div>
       ),
       th: ({ children }) => <th className="text-left px-1.5 py-0.5 border border-border font-medium">{children}</th>,
       td: ({ children }) => <td className="px-1.5 py-0.5 border border-border/60 align-top">{children}</td>,
@@ -66,7 +66,7 @@ const fmtCell = (v: unknown): string =>
       : String(v);
 
 const StepRow: React.FC<{ step: ChatStep }> = ({ step }) => (
-  <div className="flex items-start gap-1.5 text-[11px]">
+  <div className="flex items-start gap-1.5 text-meta">
     <span className={`mt-0.5 flex-shrink-0 ${step.ok ? 'text-green-500' : 'text-danger'}`}>
       {step.kind === 'propose_write'
         ? '✎'
@@ -79,7 +79,7 @@ const StepRow: React.FC<{ step: ChatStep }> = ({ step }) => (
       <span className="text-muted/70">{step.summary}</span>
       {step.columns && step.rows && step.rows.length > 0 && (
         <div className="mt-1 overflow-x-auto">
-          <table className="text-[10px] border-collapse">
+          <table className="text-meta border-collapse">
             <thead>
               <tr>
                 {step.columns.map((c) => (
@@ -152,23 +152,34 @@ export const AiChatPanel: React.FC<AiChatPanelProps> = ({ onClose }) => {
   const [resizing, setResizing] = useState(false);
   const resizeRef = useRef<{ startX: number; startW: number } | null>(null);
   useEffect(() => {
+    if (resizing) return;
     try { localStorage.setItem(AI_DOCK_WIDTH_KEY, String(dockWidth)); } catch { /* ignore */ }
-  }, [dockWidth]);
+  }, [dockWidth, resizing]);
   useEffect(() => {
     if (!resizing) return;
+    let frame = 0;
+    let pendingWidth: number | null = null;
     const onMove = (e: MouseEvent) => {
       const s = resizeRef.current;
       if (!s) return;
       // Docked on the right, so dragging left widens the panel.
       const next = s.startW + (s.startX - e.clientX);
-      setDockWidth(Math.min(AI_DOCK_MAX, Math.max(AI_DOCK_MIN, next)));
+      pendingWidth = Math.min(AI_DOCK_MAX, Math.max(AI_DOCK_MIN, next));
+      if (!frame) frame = requestAnimationFrame(() => {
+        frame = 0;
+        if (pendingWidth !== null) setDockWidth(pendingWidth);
+      });
     };
-    const onUp = () => setResizing(false);
+    const onUp = () => {
+      if (pendingWidth !== null) setDockWidth(pendingWidth);
+      setResizing(false);
+    };
     document.addEventListener('mousemove', onMove);
     document.addEventListener('mouseup', onUp);
     document.body.style.cursor = 'col-resize';
     document.body.style.userSelect = 'none';
     return () => {
+      cancelAnimationFrame(frame);
       document.removeEventListener('mousemove', onMove);
       document.removeEventListener('mouseup', onUp);
       document.body.style.cursor = '';
@@ -458,7 +469,7 @@ export const AiChatPanel: React.FC<AiChatPanelProps> = ({ onClose }) => {
       {isConnected && (
         <div className="px-5 pt-5 pb-2 shrink-0">
           <div className="inline-flex max-w-full items-center gap-2 rounded-full border border-border px-2.5 py-1.5 text-xs text-secondary" title={databaseLabel}>
-            <span className={`shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-semibold ${isD1 ? 'bg-amber-500/15 text-amber-400' : 'bg-accent/10 text-accent'}`}>
+            <span className={`shrink-0 rounded-md px-1.5 py-0.5 text-meta font-semibold ${isD1 ? 'bg-amber-500/15 text-amber-400' : 'bg-accent/10 text-accent'}`}>
               {isD1 ? 'D1' : databaseType === 'postgresql' ? 'PG' : databaseType === 'sqlite' ? 'SQLite' : 'MySQL'}
             </span>
             <span className="truncate">{databaseLabel}</span>
@@ -483,7 +494,7 @@ export const AiChatPanel: React.FC<AiChatPanelProps> = ({ onClose }) => {
               <p className="mt-3 text-sm leading-relaxed text-secondary">Ask questions, explore relationships, or draft SQL.</p>
             </div>
             <div className="space-y-2">
-              <p className="mb-2 text-[11px] font-medium uppercase tracking-wider text-muted">Try asking</p>
+              <p className="mb-2 text-xs font-medium uppercase tracking-wider text-muted">Try asking</p>
               {suggestions.map(({ icon: Icon, text }) => (
                 <button key={text} type="button" onClick={() => void send(text)} disabled={disabled}
                   className="flex min-h-14 w-full items-center gap-3 rounded-xl border border-border bg-bg-secondary/30 p-3 text-left text-sm text-primary hover:bg-bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent disabled:opacity-40 transition-transform duration-150 ease-out active:scale-[0.96] motion-reduce:transition-none motion-reduce:active:scale-100">
@@ -507,7 +518,7 @@ export const AiChatPanel: React.FC<AiChatPanelProps> = ({ onClose }) => {
             >
               {m.role === 'assistant' && m.steps && m.steps.length > 0 && (
                 <details className="mb-2 group">
-                  <summary className="cursor-pointer text-[11px] text-muted hover:text-primary select-none">
+                  <summary className="cursor-pointer text-meta text-muted hover:text-primary select-none">
                     {m.steps.length} step{m.steps.length === 1 ? '' : 's'}
                   </summary>
                   <div className="mt-1.5 space-y-1.5 pl-1 border-l border-border ml-1">
@@ -549,7 +560,7 @@ export const AiChatPanel: React.FC<AiChatPanelProps> = ({ onClose }) => {
             )}
           </div>
         )}
-        {error && <AiErrorNotice message={error} provider={status?.provider} />}
+        {error && <AiErrorNotice onDismiss={() => setError(null)} message={error} provider={status?.provider} />}
       </div>
 
       {/* Composer */}
@@ -605,11 +616,11 @@ export const AiChatPanel: React.FC<AiChatPanelProps> = ({ onClose }) => {
             </button>
           </div>
         </div>
-        <div className="mt-2 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 px-1 text-[10px] text-muted">
+        <div className="mt-2 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 px-1 text-meta text-muted">
           <span>Enter to send · Shift+Enter for a new line</span>
           {sentPrompts.length > 0 && (input === '' || histIdx !== null) && <span>↑ previous prompt</span>}
         </div>
-        <p className="mt-2.5 flex items-start gap-1.5 text-[11px] leading-relaxed text-muted px-1">
+        <p className="mt-2.5 flex items-start gap-1.5 text-xs leading-relaxed text-muted px-1">
           <ShieldCheck className="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
           Reads run automatically · review and run changes in the SQL editor.
         </p>

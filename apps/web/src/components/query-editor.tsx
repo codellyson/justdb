@@ -2,14 +2,17 @@
 import React, { useState, useMemo, useRef, useCallback, useEffect } from 'react';
 import { useHotkeys } from 'react-hotkeys-hook';
 import { EditorView } from '@codemirror/view';
-import { Card } from './ui/card';
+import { QuerySplit } from './query-split';
+import { Button } from './ui/button';
+import { QueryPlanContent } from './query-plan-content';
+import { queryColumnTypes, formatQueryDuration } from '@/lib/query-presentation';
 import { QueryResultGrid } from './query-result-grid';
 import { ErrorState } from './error-state';
 import { SqlEditor } from './sql-editor';
 import { useQueryHistory } from '../hooks/use-query-history';
 import { QueryHistory } from './query-history';
 import { formatSQL } from '@/lib/sql-formatter';
-import { getStatementAtCursor } from '@/lib/sql-statements';
+import { getStatementAtCursor, splitSqlStatements } from '@/lib/sql-statements';
 import { db } from '@/lib/db';
 import { ai } from '@/lib/ai';
 import { getResultRowCap } from '@/lib/app-settings';
@@ -19,7 +22,6 @@ import { useDashboardActions, useDashboardState } from '../contexts/dashboard-co
 import { useToast } from '../contexts/toast-context';
 import { usePendingChanges } from '../contexts/pending-changes-context';
 import { useQueries, useQuery } from '@tanstack/react-query';
-import { pgOidToType } from '@/lib/pg-types';
 import { analyzeEditability, describeReason, type EditabilityResult } from '@/lib/query-editability';
 import type { QueryFieldInfo } from '@/lib/db-provider';
 import type { ColumnInfo } from '@/types';
@@ -28,7 +30,6 @@ import { TabBar, type Tab } from './tab-bar';
 import { SaveQueryDialog } from './save-query-dialog';
 import { ExportModal } from './export-modal';
 import { AiSqlBar } from './ai-sql-bar';
-import { ExplainPlan } from './explain-plan';
 import { useAiSchemaText } from '../hooks/use-ai-schema';
 import { AlignLeft, BarChart3, Bookmark, Clock, Download, Play, RefreshCw, Sparkles, X } from 'lucide-react';
 import { Input, Tooltip } from '@codellyson/justui/react';
@@ -115,6 +116,7 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({
   const [isExecuting, setIsExecuting] = useState(false);
   const [explainData, setExplainData] = useState<{ plan: any; executionTime: number; sql: string } | null>(null);
   const [isExplaining, setIsExplaining] = useState(false);
+  const [outputView, setOutputView] = useState<'results' | 'plan'>('results');
   const [interpretation, setInterpretation] = useState<string | null>(null);
   const [isInterpreting, setIsInterpreting] = useState(false);
 
@@ -180,16 +182,7 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({
 
   const { history, addQuery, favoriteQuery, deleteQuery, clearHistory } = useQueryHistory();
 
-  const parseColumnTypes = (data: any) => {
-    if (data.fields && Array.isArray(data.fields)) {
-      const types: Record<string, string> = {};
-      for (const field of data.fields) {
-        types[field.name] = pgOidToType(field.dataTypeID);
-      }
-      return types;
-    }
-    return {};
-  };
+  const parseColumnTypes = (data: { fields?: QueryFieldInfo[] }) => queryColumnTypes(data.fields, databaseType);
 
   // Run a query and write the results to a tab. Re-running the same SQL
   // string focuses the existing tab and refreshes its rows in place rather
@@ -267,6 +260,7 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({
           ];
         });
         setActiveResultTabId(tabId);
+        setOutputView('results');
         addQuery(execQuery, execTime, totalRows);
         void track({ name: 'query_executed', duration_bucket: bucketDuration(execTime), has_rows: totalRows > 0 });
       } catch (err: any) {
@@ -277,7 +271,7 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({
         setIsExecuting(false);
       }
     },
-    [addQuery, resultTabs]
+    [addQuery, resultTabs, databaseType]
   );
 
   // Send the failing SQL + error to the model and drop a corrected query into
@@ -317,6 +311,7 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({
     try {
       const res: any = await db.explain(sql);
       setExplainData({ plan: res.plan, executionTime: res.executionTime ?? 0, sql });
+      setOutputView('plan');
     } catch (e: any) {
       setError(e?.message || 'EXPLAIN failed');
       setExplainData(null);
@@ -619,8 +614,9 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({
   }));
 
   return (
-    <div className="flex flex-col flex-1 min-h-0 gap-4">
-      <div className="space-y-3">
+    <div className="flex flex-col flex-1 min-h-0">
+      <QuerySplit editor={
+      <div className="flex flex-col h-full min-h-0 gap-2 overflow-auto">
           {showAiGenerate && (
             <AiSqlBar
               dialect={databaseType}
@@ -629,10 +625,18 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({
               disabled={isExecuting}
             />
           )}
-          <div className="flex h-[40vh] min-h-[200px] border border-border rounded-md overflow-hidden">
-            <div className="flex flex-col items-center gap-1 px-1.5 py-2 bg-bg-secondary/40 border-r border-border">
+          <div className="flex flex-col flex-1 min-h-[100px] border border-border rounded-lg overflow-hidden">
+            <div className="flex shrink-0 items-center gap-1 px-2 py-1.5 bg-bg-secondary/40 border-b border-border overflow-x-auto">
+              <Button size="sm" onClick={handleExecute} disabled={isExecuting || !query.trim()} isLoading={isExecuting}>
+                <Play className="size-3.5" aria-hidden="true" />
+                {hasSelection ? 'Run selection' : 'Run query'}
+                <kbd className="ml-2 text-meta opacity-70">Ctrl ↵</kbd>
+              </Button>
+              {splitSqlStatements(query).length > 1 && <Button size="sm" variant="secondary" disabled={isExecuting || !query.trim()} onClick={() => void executeQueryRequest(editorViewRef.current?.state.doc.toString() ?? query)}>Run all</Button>}
+              <span className="mx-1 h-5 border-l border-border" aria-hidden="true" />
               <Tooltip label="Generate SQL with AI">
                 <button
+                  aria-label="Generate SQL with AI"
                   onClick={() => setShowAiGenerate((v) => !v)}
                   className={`w-7 h-7 flex items-center justify-center rounded-sm transition-colors ${showAiGenerate ? 'text-accent bg-accent/15' : 'text-muted hover:text-accent hover:bg-accent/10'}`}
                   aria-pressed={showAiGenerate}
@@ -640,19 +644,10 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({
                   <Sparkles className="w-4 h-4" />
                 </button>
               </Tooltip>
-              <div className="w-5 border-t border-border my-0.5" />
-              <Tooltip label={hasSelection ? 'Run Selection (Ctrl+Enter)' : 'Execute (Ctrl+Enter)'}>
-                <button
-                  onClick={handleExecute}
-                  disabled={isExecuting || !query.trim()}
-                  className="w-7 h-7 flex items-center justify-center rounded-sm text-green-500 hover:bg-green-500/15 disabled:opacity-30 transition-colors"
-                >
-                  <Play className="w-4 h-4" />
-                </button>
-              </Tooltip>
-              <div className="w-5 border-t border-border my-0.5" />
+              <span className="mx-1 h-5 border-l border-border" aria-hidden="true" />
               <Tooltip label="Format SQL">
                 <button
+                  aria-label="Format SQL"
                   onClick={() => setQuery(formatSQL(query, databaseType))}
                   disabled={isExecuting || !query.trim()}
                   className="w-7 h-7 flex items-center justify-center rounded-sm text-muted hover:text-primary hover:bg-bg-secondary disabled:opacity-30 transition-colors"
@@ -662,6 +657,7 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({
               </Tooltip>
               <Tooltip label="Explain query plan">
                 <button
+                  aria-label="Explain query plan"
                   onClick={handleExplain}
                   disabled={isExecuting || isExplaining || !query.trim()}
                   className="w-7 h-7 flex items-center justify-center rounded-sm text-muted hover:text-accent hover:bg-accent/10 disabled:opacity-30 transition-colors"
@@ -671,6 +667,7 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({
               </Tooltip>
               <Tooltip label="Save query">
                 <button
+                  aria-label="Save query"
                   onClick={() => {
                     setPendingSaveQuery(query);
                     setIsSaveQueryOpen(true);
@@ -683,6 +680,7 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({
               </Tooltip>
               <Tooltip label="Clear">
                 <button
+                  aria-label="Clear SQL"
                   onClick={handleClear}
                   disabled={isExecuting}
                   className="w-7 h-7 flex items-center justify-center rounded-sm text-muted hover:text-danger hover:bg-danger/10 disabled:opacity-30 transition-colors"
@@ -692,6 +690,7 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({
               </Tooltip>
               <Tooltip label="History">
                 <button
+                  aria-label="Query history"
                   onClick={() => setShowHistory(!showHistory)}
                   className={`w-7 h-7 flex items-center justify-center rounded-sm transition-colors ${showHistory ? 'text-accent bg-accent/15' : 'text-muted hover:text-primary hover:bg-bg-secondary'}`}
                 >
@@ -699,7 +698,7 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({
                 </button>
               </Tooltip>
             </div>
-            <div className="flex-1 min-w-0 h-full">
+            <div className="flex-1 min-w-0 min-h-0">
               <SqlEditor
                 value={query}
                 onChange={setQuery}
@@ -721,7 +720,7 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({
                   <button
                     onClick={handleFixWithAi}
                     disabled={isFixing}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md bg-accent text-[rgb(var(--accent-text))] hover:bg-accent-hover disabled:opacity-50 transition-colors"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md border border-border text-secondary hover:bg-bg-secondary disabled:opacity-50 transition-colors"
                   >
                     <Sparkles className="w-3.5 h-3.5" />
                     {isFixing ? 'Fixing…' : 'Fix with AI'}
@@ -731,7 +730,7 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({
             />
           )}
           {showHistory && (
-            <QueryHistory
+            <div className="max-h-48 overflow-auto shrink-0"><QueryHistory
               entries={history}
               onSelect={(sql) => {
                 setQuery(sql);
@@ -744,23 +743,45 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({
                 setPendingSaveQuery(sql);
                 setIsSaveQueryOpen(true);
               }}
-            />
+            /></div>
           )}
       </div>
 
+      } output={
+      <div className="flex h-full min-h-0 flex-col gap-2">
+        <div className="flex shrink-0 gap-1 border-b border-border" role="tablist" aria-label="Query output">
+          {(['results', 'plan'] as const).map(value => (
+            <button key={value} type="button" role="tab" aria-selected={outputView === value}
+              tabIndex={outputView === value ? 0 : -1}
+              aria-controls={`query-${tabId}-${value}`} id={`query-${tabId}-${value}-tab`}
+              disabled={value === 'plan' && !explainData}
+              onClick={() => setOutputView(value)}
+              onKeyDown={event => {
+                if (explainData && ['ArrowLeft', 'ArrowRight'].includes(event.key)) {
+                  event.preventDefault();
+                  const next = value === 'results' ? 'plan' : 'results';
+                  setOutputView(next);
+                  document.getElementById(`query-${tabId}-${next}-tab`)?.focus();
+                }
+              }}
+              className={`min-h-10 border-b-2 px-4 text-sm font-medium transition-colors disabled:opacity-40 ${outputView === value ? 'border-accent text-primary' : 'border-transparent text-muted hover:text-primary'}`}>
+              {value === 'results' ? 'Results' : 'Query plan'}
+            </button>
+          ))}
+        </div>
       {/* EXPLAIN plan panel */}
       {explainData && (
-        <Card title="Query plan">
+        <section id={`query-${tabId}-plan`} role="tabpanel" aria-labelledby={`query-${tabId}-plan-tab`} className={outputView === 'plan' ? 'flex-1 min-h-0 overflow-auto p-3' : 'hidden'}>
           <div className="space-y-3">
             <div className="flex items-center justify-between gap-2">
-              <span className="text-xs text-muted font-mono">{explainData.executionTime}ms</span>
+              <span className="text-xs text-muted font-mono">Planning: {formatQueryDuration(explainData.executionTime)}</span>
               <div className="flex items-center gap-2">
                 {aiConfigured && (
                   <Tooltip label="Have the AI read the plan and suggest improvements">
                     <button
                       onClick={handleInterpretPlan}
                       disabled={isInterpreting}
-                      className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-md bg-accent text-[rgb(var(--accent-text))] hover:bg-accent-hover disabled:opacity-50 transition-colors"
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-md border border-border text-secondary hover:bg-bg-secondary disabled:opacity-50 transition-colors"
                     >
                       <Sparkles className="w-3 h-3" />
                       {isInterpreting ? 'Interpreting…' : 'Interpret with AI'}
@@ -769,7 +790,7 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({
                 )}
                 <Tooltip label="Close plan">
                   <button
-                    onClick={() => { setExplainData(null); setInterpretation(null); }}
+                    onClick={() => { setExplainData(null); setInterpretation(null); setOutputView('results'); }}
                     className="w-6 h-6 flex items-center justify-center rounded-sm text-muted hover:text-primary hover:bg-bg-secondary transition-colors"
                     aria-label="Close plan"
                   >
@@ -778,22 +799,17 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({
                 </Tooltip>
               </div>
             </div>
-            {Array.isArray(explainData.plan) && explainData.plan[0]?.Plan ? (
-              <ExplainPlan plan={explainData.plan} />
-            ) : (
-              <pre className="text-xs font-mono text-muted overflow-x-auto whitespace-pre-wrap max-h-64">
-                {JSON.stringify(explainData.plan, null, 2)}
-              </pre>
-            )}
+            <QueryPlanContent plan={explainData.plan} />
             {interpretation && (
               <div className="border-t border-border pt-3 text-sm text-primary whitespace-pre-wrap leading-relaxed">
                 {interpretation}
               </div>
             )}
           </div>
-        </Card>
+        </section>
       )}
 
+      <section id={`query-${tabId}-results`} role="tabpanel" aria-labelledby={`query-${tabId}-results-tab`} className={outputView === 'results' ? 'flex flex-col flex-1 min-h-0 gap-2' : 'hidden'}>
       {/* Result tabs bar */}
       {resultTabs.length > 0 && (
         <TabBar
@@ -824,7 +840,7 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({
       {/* Active result tab content */}
       {activeTab && (
         <div className="flex-1 flex flex-col min-h-0">
-          <div className="flex items-center justify-between mb-2 gap-2">
+          <div className="flex shrink-0 flex-wrap items-center justify-between mb-2 gap-2">
             <span className="text-sm text-muted">
               {activeTab.truncated ? (
                 <>
@@ -839,7 +855,7 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({
               {editableMeta ? (
                 <Tooltip label={`Editable — ${editableMeta.schema}.${editableMeta.table}`}>
                   <span
-                    className="text-[10px] font-medium uppercase tracking-wide px-1.5 py-0.5 rounded-sm bg-accent/10 text-accent"
+                    className="text-meta font-medium uppercase tracking-wide px-1.5 py-0.5 rounded-sm bg-accent/10 text-accent"
                   >
                     Editable
                   </span>
@@ -850,7 +866,7 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({
                     editability.detail ? ` (${editability.detail})` : ''
                   }`}
                 >
-                  <span className="text-[10px] font-medium uppercase tracking-wide px-1.5 py-0.5 rounded-sm bg-bg-secondary text-muted">
+                  <span className="text-meta font-medium uppercase tracking-wide px-1.5 py-0.5 rounded-sm bg-bg-secondary text-muted">
                     Read-only
                   </span>
                 </Tooltip>
@@ -870,7 +886,7 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({
                 className="text-xs"
                 aria-label="Find in result"
               />
-              <span className="text-sm text-muted font-mono">{activeTab.executionTime}ms</span>
+              <span className="text-sm text-muted font-mono">Execution: {formatQueryDuration(activeTab.executionTime)}</span>
               <Tooltip label="Export result">
                 <button
                   onClick={() => setIsExportOpen(true)}
@@ -893,6 +909,9 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({
               </Tooltip>
             </div>
           </div>
+          {!editableMeta && !editability.editable && (
+            <p className="mb-2 shrink-0 text-xs text-muted">Read-only: {describeReason(editability.reason)}{editability.detail ? ` (${editability.detail})` : ''}.</p>
+          )}
           {activeTab.rows.length === 0 ? (
             <div className="text-center py-6 text-sm text-muted">
               Query executed successfully. No rows returned.
@@ -903,10 +922,8 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({
               data={activeTab.rows}
               columnTypes={activeTab.columnTypes}
               layoutKey={activeTab.sql}
-              // Fill the remaining height of the flex column rather than
-              // guessing a viewport offset — the SQL editor card above is
-              // 40vh and other panels (AI, errors, EXPLAIN) vary the offset.
               fillParent
+              fitColumns
               searchQuery={resultSearchQuery}
               schema={editableMeta?.schema}
               table={editableMeta?.table}
@@ -929,6 +946,10 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({
           Run a query to see results here.
         </div>
       )}
+
+      </section>
+      </div>
+      } />
 
       {pendingQueryConfirm && (
         <QueryExecutionConfirmation

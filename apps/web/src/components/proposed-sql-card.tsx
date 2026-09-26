@@ -26,7 +26,7 @@ export function ProposedSqlCard({ sql, onReview, onCopy }: ProposedSqlCardProps)
           <FileCode2 className="size-4 shrink-0 text-muted" aria-hidden="true" />
           Proposed change
         </div>
-        <span className="rounded-md bg-warning/10 px-2 py-1 text-[10px] font-medium text-warning">Not run</span>
+        <span className="rounded-md bg-warning/10 px-2 py-1 text-meta font-medium text-warning">Not run</span>
       </div>
       <pre tabIndex={0} aria-label="Proposed SQL" className="max-h-56 overflow-auto border-y border-border bg-bg px-3 py-3 text-xs leading-6 text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent"><code className="font-mono">{sql}</code></pre>
       <div className="space-y-3 p-3">

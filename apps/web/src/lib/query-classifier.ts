@@ -1,4 +1,5 @@
-export type QueryKind = 'read' | 'write' | 'ddl' | 'blocked' | 'unknown';
+import { splitSqlStatements } from './sql-statements';
+export type QueryKind = 'read' | 'write' | 'ddl' | 'transaction' | 'unknown';
 
 export interface QueryClassification {
   kind: QueryKind;
@@ -10,7 +11,8 @@ export interface QueryClassification {
 const READ_KEYWORDS = new Set(['SELECT', 'WITH', 'EXPLAIN', 'SHOW', 'PRAGMA', 'DESCRIBE', 'DESC']);
 const WRITE_KEYWORDS = new Set(['INSERT', 'UPDATE', 'DELETE', 'MERGE', 'UPSERT', 'REPLACE']);
 const DDL_KEYWORDS = new Set(['CREATE', 'ALTER', 'DROP', 'TRUNCATE', 'RENAME']);
-const BLOCKED_KEYWORDS = new Set([
+const TRANSACTION_KEYWORDS = new Set(['BEGIN', 'COMMIT', 'END', 'ROLLBACK', 'SAVEPOINT', 'RELEASE', 'START']);
+const ADMIN_KEYWORDS = new Set([
   'GRANT', 'REVOKE', 'CALL', 'EXEC', 'EXECUTE', 'COPY', 'IMPORT', 'LOAD',
   'VACUUM', 'REINDEX', 'CLUSTER', 'REFRESH', 'REASSIGN', 'DO', 'NOTIFY',
   'LISTEN', 'UNLISTEN', 'PREPARE', 'DEALLOCATE', 'COMMENT', 'SET', 'RESET',
@@ -95,12 +97,13 @@ export function classifyQuery(sql: string): QueryClassification {
     return { kind: 'unknown', statement: '', isBulkWrite: false, reason: 'Empty or unparseable query' };
   }
 
-  if (BLOCKED_KEYWORDS.has(statement)) {
+  if (TRANSACTION_KEYWORDS.has(statement)) return { kind: 'transaction', statement, isBulkWrite: false };
+
+  if (ADMIN_KEYWORDS.has(statement)) {
     return {
-      kind: 'blocked',
+      kind: 'write',
       statement,
       isBulkWrite: false,
-      reason: `Statements starting with ${statement} are not allowed`,
     };
   }
 
@@ -126,6 +129,7 @@ export function classifyQuery(sql: string): QueryClassification {
         isBulkWrite: true,
       };
     }
+    if ((statement === 'EXPLAIN' && /\bANALYZE\b/.test(upper) && /\b(INSERT|UPDATE|DELETE|MERGE)\b/.test(upper)) || (statement === 'PRAGMA' && /[=(]/.test(upper))) return { kind: 'write', statement, isBulkWrite: true };
     return { kind: 'read', statement, isBulkWrite: false };
   }
 
@@ -141,4 +145,16 @@ export function requiresTypedConfirmation(c: QueryClassification): boolean {
   if (c.kind === 'ddl' && (c.statement === 'TRUNCATE' || c.statement === 'DROP')) return true;
   if (c.kind === 'write' && c.isBulkWrite) return true;
   return false;
+}
+
+export function classifyQueryBatch(sql: string): QueryClassification {
+  const items = splitSqlStatements(sql).map(s => classifyQuery(s.text)).filter(c => c.statement);
+  return items.find(requiresTypedConfirmation)
+    ?? items.find(c => c.kind === 'unknown' || c.kind === 'ddl' || c.kind === 'write')
+    ?? items.find(c => c.kind === 'transaction' && ['COMMIT', 'END'].includes(c.statement))
+    ?? items[0] ?? classifyQuery('');
+}
+export function shouldConfirmQuery(c: QueryClassification, mode: 'guided' | 'expert'): boolean {
+  if (mode === 'expert') return false;
+  return c.kind !== 'read' && !(c.kind === 'transaction' && !['COMMIT', 'END'].includes(c.statement));
 }

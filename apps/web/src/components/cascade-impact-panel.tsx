@@ -96,7 +96,7 @@ export const CascadeImpactPanel: React.FC<Props> = ({
               {totalCascade + totalSetNull === 1 ? "" : "s"} across {tableCount}{" "}
               table{tableCount === 1 ? "" : "s"}
             </span>
-            <span className="ml-auto text-muted text-[10px]">
+            <span className="ml-auto text-muted text-meta">
               {showBreakdown ? "hide" : "show breakdown"}
             </span>
           </button>
@@ -114,7 +114,7 @@ export const CascadeImpactPanel: React.FC<Props> = ({
       )}
 
       {!truncated && warnings.length > 0 && (
-        <div className="border border-border rounded-md p-2 bg-bg-secondary/30 text-[11px] text-muted space-y-0.5">
+        <div className="border border-border rounded-md p-2 bg-bg-secondary/30 text-meta text-muted space-y-0.5">
           {warnings.map((w, i) => (
             <div key={i}>{w}</div>
           ))}
@@ -130,14 +130,14 @@ const TruncatedBanner: React.FC<{
 }> = ({ extendedAttempted, onRunFullPreview }) => {
   if (extendedAttempted) {
     return (
-      <div className="border border-border rounded-md p-3 bg-bg-secondary/30 text-[11px] text-muted">
+      <div className="border border-border rounded-md p-3 bg-bg-secondary/30 text-meta text-muted">
         Cascade is bigger than we could map. The breakdown above is partial —
         the actual delete may touch more rows.
       </div>
     );
   }
   return (
-    <div className="border border-border rounded-md p-3 bg-bg-secondary/30 space-y-2 text-[11px] text-muted">
+    <div className="border border-border rounded-md p-3 bg-bg-secondary/30 space-y-2 text-meta text-muted">
       <div>
         We didn’t finish mapping the cascade. The breakdown above is partial.
       </div>
@@ -201,18 +201,18 @@ const BucketRow: React.FC<{
         <span className="text-secondary">
           {entry.count} row{entry.count === 1 ? "" : "s"}
         </span>
-        <span className="text-[10px] uppercase tracking-wide text-muted">
+        <span className="text-meta uppercase tracking-wide text-muted">
           {ruleLabel}
         </span>
         {entry.truncated && (
-          <span className="text-muted text-[10px]">truncated</span>
+          <span className="text-muted text-meta">truncated</span>
         )}
-        <span className="ml-auto text-muted text-[10px]">
+        <span className="ml-auto text-muted text-meta">
           {expanded ? "−" : "+"}
         </span>
       </button>
       {expanded && (
-        <div className="mt-2 pl-3 border-l-2 border-border text-[11px] text-muted space-y-0.5">
+        <div className="mt-2 pl-3 border-l-2 border-border text-meta text-muted space-y-0.5">
           <div>
             via{" "}
             <span className="font-mono">{entry.fkColumns.join(", ")}</span>
