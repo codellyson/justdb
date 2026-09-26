@@ -42,7 +42,6 @@ const downloads = await resolveDownloads();
 
     <main>
       <header class="hero">
-        <p class="eyebrow">A DESKTOP DATABASE CLIENT</p>
         <h1>Just your data.<br /><span class="accent">No bullshit.</span></h1>
         <p class="intro">Browse PostgreSQL, SQLite, and Turso. Run SQL, follow relationships, and review edits before saving — all from your desktop.</p>
         <div class="hero-actions">
@@ -58,24 +57,23 @@ const downloads = await resolveDownloads();
       </header>
 
       <section class="product-overview shell" aria-label="The JustDB workspace">
-        <div class="compatibility"><span>WORKS WITH YOUR DATA</span><div>PostgreSQL <i aria-hidden="true">/</i> SQLite <i aria-hidden="true">/</i> Turso</div></div>
+        <div class="compatibility"><div>PostgreSQL <i aria-hidden="true">/</i> SQLite <i aria-hidden="true">/</i> Turso</div></div>
         <figure class="workspace-frame">
-          <div class="frame-label"><span>THE WORKSPACE</span><span>Browse · Query · Inspect</span></div>
           <div class="workspace-image"><span class="workspace-crop"><img src="/features/workspace-1600.webp" srcset="/features/workspace-800.webp 800w, /features/workspace-1600.webp 1600w, /features/workspace-2400.webp 2400w" sizes="(max-width: 1248px) calc(100vw - 48px), 1200px" width="2400" height="1000" alt="JustDB browsing sample users with a selected record open in the row inspector." fetchpriority="high" /></span></div>
           <figcaption><span>A closer look at every record.</span> Filter your tables and inspect fields side by side.</figcaption>
         </figure>
       </section>
 
       <section id="features" class="feature-stories shell" aria-label="Features">
-        <div class="section-intro"><p class="eyebrow">BUILT FOR THE EVERYDAY</p><h2>Less setup.<br />More understanding.</h2><p>From the first connection to the next query,<br class="desktop-break" /> everything stays close to your data.</p></div>
+        <div class="section-intro"><h2>Less setup.<br />More understanding.</h2><p>From the first connection to the next query,<br class="desktop-break" /> everything stays close to your data.</p></div>
         <div class="feature-grid">
         {[
-          { n: '01', title: 'Pick up where you left off.', body: 'Keep your saved connections together and discover PostgreSQL servers running on your machine. Choose a connection and get straight to your data.', image: 'connections', x: 1220, y: 200, width: 1160, height: 1100, alt: 'Saved database connections and two locally detected PostgreSQL servers.', caption: 'Saved connections and local discovery, together.' },
-          { n: '02', title: 'Ask. Review. Then run.', body: 'Ask the optional AI assistant about your data. When you request a change, inspect the proposed SQL and open it in the editor before running it. Here, a deletion is explicitly marked “Not run.”', image: 'ai-review', x: 1750, y: 80, width: 930, height: 1210, alt: 'AI answering a row-count question and showing a proposed deletion with Review in editor and Copy SQL actions.', caption: 'Proposed changes remain yours to review and execute.' },
-          { n: '03', title: 'Make values easier to read.', body: 'Choose relative dates, pretty JSON, boolean badges, and comma-separated numbers. Control how values appear in your tables from the docked formatting settings.', image: 'formatting', x: 2680, y: 0, width: 920, height: 1160, alt: 'Formatting settings with controls for dates, JSON, booleans, numbers, and long text.', caption: 'Display preferences within reach of your workspace.' },
+          { title: 'Pick up where you left off.', body: 'Keep your saved connections together and discover PostgreSQL servers running on your machine. Choose a connection and get straight to your data.', image: 'connections', x: 1220, y: 200, width: 1160, height: 1100, alt: 'Saved database connections and two locally detected PostgreSQL servers.', caption: 'Saved connections and local discovery, together.' },
+          { title: 'Ask. Review. Then run.', body: 'Ask the optional AI assistant about your data. When you request a change, inspect the proposed SQL and open it in the editor before running it. Here, a deletion is explicitly marked “Not run.”', image: 'ai-review', x: 1750, y: 80, width: 930, height: 1210, alt: 'AI answering a row-count question and showing a proposed deletion with Review in editor and Copy SQL actions.', caption: 'Proposed changes remain yours to review and execute.' },
+          { title: 'Make values easier to read.', body: 'Choose relative dates, pretty JSON, boolean badges, and comma-separated numbers. Control how values appear in your tables from the docked formatting settings.', image: 'formatting', x: 2680, y: 0, width: 920, height: 1160, alt: 'Formatting settings with controls for dates, JSON, booleans, numbers, and long text.', caption: 'Display preferences within reach of your workspace.' },
         ].map(feature => (
           <article class="feature-story">
-            <div class="feature-copy"><span class="number">{feature.n}</span><h2>{feature.title}</h2><p>{feature.body}</p></div>
+            <div class="feature-copy"><h2>{feature.title}</h2><p>{feature.body}</p></div>
             <figure>
               <div class="feature-image"><span class="feature-crop" style={`aspect-ratio:${feature.width}/${feature.height}`}><img src={`/features/${feature.image}-${feature.width}.webp`} srcset={`/features/${feature.image}-${feature.width / 2}.webp ${feature.width / 2}w, /features/${feature.image}-${feature.width}.webp ${feature.width}w`} sizes="(max-width: 760px) calc(100vw - 80px), (max-width: 1248px) calc(50vw - 66px), 524px" width={feature.width} height={feature.height} loading="lazy" decoding="async" alt={feature.alt} /></span></div>
               <figcaption>{feature.caption}</figcaption>
@@ -85,8 +83,7 @@ const downloads = await resolveDownloads();
         </div>
       </section>
 
-      <section class="statement shell"><div><p class="eyebrow">ON YOUR MACHINE</p>
-        <h2>Your database.<br /><span class="accent">Your connection.</span></h2>
+      <section class="statement shell"><div><h2>Your database.<br /><span class="accent">Your connection.</span></h2>
         </div><div><p>JustDB connects directly from your machine to your database. Saved credentials stay in the OS keychain. There’s no account to create and no sync service to configure — open the app and start exploring.</p><div class="trust-facts"><span>Direct connections</span><span>OS keychain storage</span><span>AI is opt-in</span></div></div>
       </section>
 
@@ -99,7 +96,6 @@ const downloads = await resolveDownloads();
 
       <section class="closing">
         <div class="closing-card">
-          <p class="eyebrow">READY WHEN YOU ARE</p>
           <h2>Get straight<br />to <span class="accent">your data.</span></h2>
           <div class="closing-actions"><a class="button" href={LAUNCH_URL} data-fallback={downloadUrl}>Open JustDB</a><a class="quiet-link" href={downloadUrl}>or download the app</a></div>
           <p class="availability">Free, on your desktop. No account needed to start.</p>
@@ -137,7 +133,7 @@ const downloads = await resolveDownloads();
   .button.secondary { background:rgb(var(--bg-elevated)); border-color:rgb(var(--border)); color:rgb(var(--text-primary)); }
   .button.secondary:hover { border-color:rgb(var(--text-muted)); }
   .hero { max-width:840px; padding:96px 24px 0; margin:auto; text-align:center; }
-  .eyebrow,.number,.frame-label,.compatibility>span,.footer-links h2 { font-family:Menlo,Consolas,monospace; font-size:11px; font-weight:400; letter-spacing:.08em; color:rgb(var(--text-muted)); }
+  .eyebrow,.number,.frame-label,.compatibility>span,.footer-links h2 { font-family:inherit; font-size:11px; font-weight:400; letter-spacing:.08em; color:rgb(var(--text-muted)); }
   .eyebrow { margin-bottom:24px; }
   h1 { font-size:clamp(44px,6.5vw,76px); font-weight:400; line-height:1.05; letter-spacing:0; }
   h1 .accent { color:rgb(var(--text-secondary)); }
@@ -171,12 +167,43 @@ const downloads = await resolveDownloads();
   .feature-grid { position:relative; isolation:isolate; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:20px; }
   .feature-story:last-child { grid-column:1 / -1; }
   .feature-story:last-child figure { max-width:524px; }
-  .feature-story { border:1px solid rgb(var(--border)); border-radius:8px; background:linear-gradient(135deg, rgb(255 255 255 / .065), transparent 45%), rgb(var(--bg-secondary) / .5); backdrop-filter:blur(18px); -webkit-backdrop-filter:blur(18px); box-shadow:inset 0 1px 0 rgb(255 255 255 / .12), inset 0 -1px 0 rgb(255 255 255 / .025), 0 12px 32px -24px rgb(0 0 0 / .5); padding:32px; display:flex; flex-direction:column; overflow:hidden; }
-  .number { display:block; margin-bottom:16px; }
-  .feature-grid::before { content:''; position:absolute; inset:-24px; z-index:-1; pointer-events:none; background:radial-gradient(ellipse at 18% 15%, rgb(var(--text-primary) / .045), transparent 45%), radial-gradient(ellipse at 90% 65%, rgb(var(--text-primary) / .03), transparent 40%); }
-  .landing[data-theme='light'] .feature-story { background:linear-gradient(135deg, rgb(255 255 255 / .85), rgb(255 255 255 / .3) 55%), rgb(var(--bg-secondary) / .5); box-shadow:inset 0 1px 0 #fff, 0 12px 32px -24px rgb(0 0 0 / .18); }
-  @supports not (backdrop-filter:blur(1px)) { .feature-story { background:rgb(var(--bg-secondary)); } }
-  @media(prefers-reduced-transparency:reduce) { .feature-story { background:rgb(var(--bg-secondary)) !important; backdrop-filter:none; -webkit-backdrop-filter:none; }.feature-grid::before { display:none; } }
+  .feature-story {
+    position:relative; z-index:1; border:1px solid rgb(255 255 255 / .16);
+    border-radius:12px; background:rgb(18 18 18 / .28);
+    backdrop-filter:blur(24px); -webkit-backdrop-filter:blur(24px);
+    box-shadow:inset 0 1px 0 rgb(255 255 255 / .23), inset 1px 0 0 rgb(255 255 255 / .06), inset 0 -1px 0 rgb(255 255 255 / .04), 0 16px 40px -24px rgb(0 0 0 / .6);
+    padding:32px; display:flex; flex-direction:column; overflow:hidden;
+  }
+  /* These shapes sit behind the cards: sharp in the gaps, diffused through glass. */
+  .feature-grid::before {
+    content:''; position:absolute; inset:0; z-index:0; pointer-events:none;
+    background:
+      radial-gradient(ellipse at 48% 26%, rgb(255 255 255 / .14), transparent 46%),
+      repeating-linear-gradient(120deg, transparent 0 155px, rgb(255 255 255 / .07) 156px 158px, transparent 159px 310px);
+    mask-image:linear-gradient(transparent, #000 12%, #000 85%, transparent);
+  }
+  .feature-grid::after {
+    content:''; position:absolute; width:76%; height:240px; left:12%; top:140px;
+    border:1px solid rgb(255 255 255 / .25); border-radius:50%;
+    background:rgb(255 255 255 / .065); transform:rotate(-24deg);
+    z-index:0; pointer-events:none;
+  }
+  .landing[data-theme='light'] .feature-story {
+    background:rgb(255 255 255 / .32); border-color:rgb(0 0 0 / .1);
+    box-shadow:inset 0 1px 0 rgb(255 255 255 / .95), inset 1px 0 0 rgb(255 255 255 / .55), 0 16px 40px -24px rgb(0 0 0 / .2);
+  }
+  .landing[data-theme='light'] .feature-grid::before {
+    background:radial-gradient(ellipse at 48% 26%, rgb(0 0 0 / .1), transparent 46%),
+      repeating-linear-gradient(120deg, transparent 0 155px, rgb(0 0 0 / .07) 156px 158px, transparent 159px 310px);
+  }
+  .landing[data-theme='light'] .feature-grid::after { border-color:rgb(0 0 0 / .15); background:rgb(0 0 0 / .045); }
+  @supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))) {
+    .feature-story { background:rgb(var(--bg-secondary)); }
+  }
+  @media(prefers-reduced-transparency:reduce) {
+    .feature-story { background:rgb(var(--bg-secondary)) !important; backdrop-filter:none; -webkit-backdrop-filter:none; }
+    .feature-grid::before,.feature-grid::after { display:none; }
+  }
   .feature-copy h2 { font-size:24px; line-height:1.33; font-weight:400; margin-bottom:14px; }
   .feature-copy p { font-size:14px; line-height:1.65; color:rgb(var(--text-secondary)); }
   .feature-story figure { min-width:0; margin:32px 0 0; width:100%; }
@@ -187,7 +214,7 @@ const downloads = await resolveDownloads();
   .feature-story figcaption { margin-top:12px; font-size:12px; line-height:1.5; color:rgb(var(--text-muted)); }
   .statement { margin-top:96px; display:grid; grid-template-columns:1fr 1fr; gap:64px; padding-block:48px; border-top:1px solid rgb(var(--border)); border-bottom:1px solid rgb(var(--border)); }
   .statement p:not(.eyebrow) { font-size:16px; line-height:1.75; color:rgb(var(--text-secondary)); }
-  .trust-facts { display:flex; flex-wrap:wrap; gap:12px 20px; margin-top:24px; font-family:Menlo,monospace; font-size:11px; color:rgb(var(--text-primary)); }
+  .trust-facts { display:flex; flex-wrap:wrap; gap:12px 20px; margin-top:24px; font-family:inherit; font-size:11px; color:rgb(var(--text-primary)); }
   .trust-facts span::before { content:'✓'; margin-right:8px; }
   .faq { max-width:760px; margin:96px auto 0; padding-inline:24px; scroll-margin-top:90px; }
   .faq h2 { font-size:30px; font-weight:400; margin-bottom:24px; }
