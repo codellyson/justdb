@@ -1,3 +1,5 @@
+import { AiErrorNotice } from './ai-error-notice';
+import { aiErrorText } from '@/lib/ai-error';
 import React, { useState, useEffect, useCallback } from 'react';
 import { ai, type AiStatus } from '@/lib/ai';
 import { Loader2, Sun } from 'lucide-react';
@@ -45,7 +47,7 @@ export const AiSqlBar: React.FC<AiSqlBarProps> = ({ dialect, schema, onGenerated
       }
       onGenerated(res.sql, res.explanation);
     } catch (e: any) {
-      setError(e?.message || 'Generation failed');
+      setError(aiErrorText(e));
     } finally {
       setIsBusy(false);
     }
@@ -103,7 +105,7 @@ export const AiSqlBar: React.FC<AiSqlBarProps> = ({ dialect, schema, onGenerated
           {isBusy ? 'Generating…' : 'Generate'}
         </button>
       </div>
-      {error && <p className="text-xs text-danger px-3" role="alert">{error}</p>}
+      {error && <AiErrorNotice message={error} provider={status?.provider} />}
     </div>
   );
 };

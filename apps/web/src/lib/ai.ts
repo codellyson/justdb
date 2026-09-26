@@ -2,8 +2,8 @@
  * Typed client for the opt-in AI commands (natural-language → SQL).
  *
  * Mirrors lib/db.ts: every function maps to one `invoke('ai_*', ...)` call.
- * The provider API key lives in the OS keychain on the Rust side and never
- * touches this layer — we only ever send a prompt + schema and get SQL back.
+ * Keys pass through this client only when users save them; Rust stores them
+ * in the OS keychain. Generation requests send prompts and schema, not keys.
  */
 
 import { invoke as tauriInvoke } from "@tauri-apps/api/core";
@@ -14,6 +14,7 @@ export interface AiStatus {
   configured: boolean;
   provider?: string;
   model?: string;
+  customModel?: string;
 }
 
 export interface GenerateSqlResult {

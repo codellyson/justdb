@@ -16,7 +16,7 @@ use std::path::{Path, PathBuf};
 use keyring::Entry;
 use serde::{Deserialize, Serialize};
 
-use crate::postgres::DbConfig;
+use crate::postgres::{DbConfig, DbType};
 
 const SERVICE: &str = "com.kreativekorna.justdb";
 // Pre-split builds stored every connection (with secrets) as one JSON blob
@@ -48,6 +48,8 @@ pub struct ClientSavedConnection {
 
 #[derive(Debug, Serialize)]
 pub struct ClientConfig {
+    #[serde(rename = "type")]
+    pub db_type: DbType,
     pub host: String,
     pub port: u16,
     pub database: String,
@@ -55,6 +57,10 @@ pub struct ClientConfig {
     // Always blank — secrets never leave the keychain in the GET path.
     pub password: String,
     pub ssl: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub filepath: Option<String>,
+    #[serde(rename = "readOnly")]
+    pub read_only: bool,
 }
 
 // What the keychain holds for one connection. Both fields are secret; the rest
@@ -246,12 +252,15 @@ fn sanitize(c: &SavedConnection) -> ClientSavedConnection {
         id: c.id.clone(),
         name: c.name.clone(),
         config: ClientConfig {
+            db_type: c.config.db_type.clone(),
             host: c.config.host.clone(),
             port: c.config.port,
             database: c.config.database.clone(),
             username: c.config.username.clone(),
             password: String::new(),
             ssl: c.config.ssl,
+            filepath: c.config.filepath.clone(),
+            read_only: c.config.read_only,
         },
         created_at: c.created_at,
         last_used: c.last_used,
@@ -289,6 +298,7 @@ mod tests {
                 ssl: true,
                 filepath: None,
                 auth_token: None,
+                read_only: false,
             },
             created_at: 1,
             last_used: None,
@@ -327,5 +337,20 @@ mod tests {
         // Non-secret fields survive.
         assert_eq!(stripped.host, "db.example.com");
         assert_eq!(stripped.username, "postgres");
+    }
+
+    #[test]
+    fn sqlite_saved_connection_keeps_file_path_for_display() {
+        let mut saved = conn("sqlite");
+        saved.config.db_type = DbType::Sqlite;
+        saved.config.filepath = Some("/tmp/example.db".to_string());
+        saved.config.auth_token = Some("secret".to_string());
+        saved.config.read_only = true;
+
+        let client = serde_json::to_value(sanitize(&saved)).unwrap();
+        assert_eq!(client["config"]["type"], "sqlite");
+        assert_eq!(client["config"]["filepath"], "/tmp/example.db");
+        assert_eq!(client["config"]["readOnly"], true);
+        assert!(client["config"].get("authToken").is_none());
     }
 }

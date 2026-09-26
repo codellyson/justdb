@@ -2,10 +2,8 @@
 //! subset of operations slice 1 needs: open, query → JSON rows, list
 //! tables, describe table, browse table rows, run arbitrary SQL.
 //!
-//! Local files (`Builder::new_local(path)`) and remote Turso/sqld endpoints
-//! (`Builder::new_remote(url, token)`) flow through the same libsql
-//! `Connection`, so the rest of this module doesn't care which one's behind
-//! it.
+//! Local files and Turso/sqld endpoints use libsql. Cloudflare D1 uses its
+//! REST API, with the same SQLite catalog and query methods above the transport.
 
 use libsql::{params, Builder, Connection, Database, Value as LibsqlValue};
 use serde::Serialize;
@@ -13,6 +11,7 @@ use serde_json::{Map as JsonMap, Number as JsonNumber, Value as JsonValue};
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
+use crate::d1::D1Connection;
 use crate::postgres::{json_to_text, pg_quote_literal, ColumnMeta, DbConfig, QueryResult};
 
 /// Catalog answer for SQLite's single-schema model. We expose `main` (and
@@ -21,15 +20,17 @@ use crate::postgres::{json_to_text, pg_quote_literal, ColumnMeta, DbConfig, Quer
 pub const DEFAULT_SCHEMA: &str = "main";
 
 pub struct SqliteConnection {
-    // libsql::Connection isn't Sync; wrap in a Mutex so the DashMap of
-    // sessions can hold an Arc<SqliteConnection> across awaits. Queries
-    // briefly take the lock; for slice 1 (browse-only, no concurrent
-    // writes) this is fine. Slice 2 can move to a per-call connection
-    // checkout from a libsql::Database pool if contention shows up.
-    conn: Mutex<Connection>,
-    // Held so the database (and its background tasks for remote) lives
-    // as long as the connection.
-    _db: Arc<Database>,
+    backend: SqliteBackend,
+}
+
+enum SqliteBackend {
+    D1(D1Connection),
+    Libsql {
+        // libsql::Connection isn't Sync; the Mutex permits shared sessions.
+        conn: Mutex<Connection>,
+        // Keep the database and its remote background tasks alive.
+        db: Arc<Database>,
+    },
 }
 
 impl SqliteConnection {
@@ -38,6 +39,13 @@ impl SqliteConnection {
             .filepath
             .as_deref()
             .ok_or_else(|| "SQLite config requires a filepath or libsql:// URL".to_string())?;
+
+        if filepath.starts_with("d1://") {
+            let token = config.auth_token.as_deref().unwrap_or_default();
+            return Ok(Self {
+                backend: SqliteBackend::D1(D1Connection::connect(filepath, token).await?),
+            });
+        }
 
         let is_remote = filepath.starts_with("libsql://")
             || filepath.starts_with("https://")
@@ -75,7 +83,13 @@ impl SqliteConnection {
             log::info!("[sqlite::connect] Builder::new_remote.build() done");
             built
         } else {
+            let flags = if config.read_only {
+                libsql::OpenFlags::SQLITE_OPEN_READ_ONLY
+            } else {
+                libsql::OpenFlags::default()
+            };
             Builder::new_local(filepath)
+                .flags(flags)
                 .build()
                 .await
                 .map_err(|e| format!("libsql local build: {e}"))?
@@ -108,8 +122,10 @@ impl SqliteConnection {
         log::info!("[sqlite::connect] ping ok — session ready");
 
         Ok(Self {
-            conn: Mutex::new(conn),
-            _db: Arc::new(db),
+            backend: SqliteBackend::Libsql {
+                conn: Mutex::new(conn),
+                db: Arc::new(db),
+            },
         })
     }
 
@@ -128,19 +144,26 @@ impl SqliteConnection {
     /// the app's own queries or the health ping. Checking out a connection from
     /// an already-open `libsql::Database` is cheap (no file/network re-open).
     pub async fn query_objects_isolated(&self, sql: &str) -> Result<Vec<JsonValue>, String> {
-        let conn = self
-            ._db
-            .connect()
-            .map_err(|e| format!("libsql connect: {e}"))?;
-        let result = Self::run_query_on(&conn, sql).await?;
+        let result = match &self.backend {
+            SqliteBackend::D1(d1) => d1.query(sql).await?,
+            SqliteBackend::Libsql { db, .. } => {
+                let conn = db.connect().map_err(|e| format!("libsql connect: {e}"))?;
+                Self::run_query_on(&conn, sql).await?
+            }
+        };
         Ok(rows_as_objects(&result))
     }
 
     /// Run a query and capture column metadata + rows as JSON values. Mirrors
     /// the shape of `postgres::QueryResult`.
     pub async fn query(&self, sql: &str) -> Result<QueryResult, String> {
-        let conn = self.conn.lock().await;
-        Self::run_query_on(&conn, sql).await
+        match &self.backend {
+            SqliteBackend::D1(d1) => d1.query(sql).await,
+            SqliteBackend::Libsql { conn, .. } => {
+                let conn = conn.lock().await;
+                Self::run_query_on(&conn, sql).await
+            }
+        }
     }
 
     /// Connection-agnostic query body, so the shared `conn` and a checked-out
@@ -193,15 +216,20 @@ impl SqliteConnection {
     /// remote libsql connection doesn't hang the entire 30s health-poll
     /// interval — the health hook would never see a fresh tick.
     pub async fn ping(&self) -> bool {
-        let conn = self.conn.lock().await;
-        matches!(
-            tokio::time::timeout(
-                std::time::Duration::from_secs(5),
-                conn.query("SELECT 1", ()),
-            )
-            .await,
-            Ok(Ok(_))
-        )
+        match &self.backend {
+            SqliteBackend::D1(d1) => d1.query("SELECT 1").await.is_ok(),
+            SqliteBackend::Libsql { conn, .. } => {
+                let conn = conn.lock().await;
+                matches!(
+                    tokio::time::timeout(
+                        std::time::Duration::from_secs(5),
+                        conn.query("SELECT 1", ()),
+                    )
+                    .await,
+                    Ok(Ok(_))
+                )
+            }
+        }
     }
 
     /// `db_list_schemas` for SQLite — always exactly the schemas SQLite
@@ -312,17 +340,25 @@ impl SqliteConnection {
     /// Run UPDATE/DELETE and return affected-row count. Used by
     /// `db_mutate` (UPDATE/DELETE branch) and `db_ddl`.
     pub async fn execute(&self, sql: &str) -> Result<u64, String> {
-        let conn = self.conn.lock().await;
-        conn.execute(sql, ())
-            .await
-            .map_err(|e| format!("libsql execute: {e}"))
+        match &self.backend {
+            SqliteBackend::D1(d1) => d1.execute(sql).await,
+            SqliteBackend::Libsql { conn, .. } => {
+                let conn = conn.lock().await;
+                conn.execute(sql, ())
+                    .await
+                    .map_err(|e| format!("libsql execute: {e}"))
+            }
+        }
     }
 
     /// Atomic batch — opens a transaction, runs each statement in order,
     /// commits, or rolls back on any error. Used by `db_mutate_batch` and
     /// `db_import`.
     pub async fn run_transaction(&self, statements: &[String]) -> Result<Vec<u64>, String> {
-        let conn = self.conn.lock().await;
+        let conn = match &self.backend {
+            SqliteBackend::D1(d1) => return d1.run_transaction(statements).await,
+            SqliteBackend::Libsql { conn, .. } => conn.lock().await,
+        };
         let tx = conn
             .transaction()
             .await
@@ -620,3 +656,42 @@ fn first_column_strings(rows: &[Vec<JsonValue>]) -> Vec<String> {
 const _: () = {
     let _ = std::marker::PhantomData::<fn() -> params::Params>;
 };
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn read_only_local_connection_rejects_writes() {
+        let dir = std::env::temp_dir().join(format!("justdb-d1-readonly-{}", uuid::Uuid::new_v4()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let path = dir.join("local.sqlite");
+        let config = DbConfig {
+            db_type: crate::postgres::DbType::Sqlite,
+            host: String::new(),
+            port: 0,
+            database: "local".to_string(),
+            username: String::new(),
+            password: String::new(),
+            ssl: false,
+            filepath: Some(path.to_string_lossy().into_owned()),
+            auth_token: None,
+            read_only: false,
+        };
+
+        let writable = SqliteConnection::connect(config.clone()).await.unwrap();
+        writable.execute("CREATE TABLE entries (id INTEGER)").await.unwrap();
+        drop(writable);
+
+        let readonly = SqliteConnection::connect(DbConfig {
+            read_only: true,
+            ..config
+        })
+        .await
+        .unwrap();
+        assert!(readonly.query("SELECT * FROM entries").await.is_ok());
+        assert!(readonly.execute("INSERT INTO entries (id) VALUES (1)").await.is_err());
+        drop(readonly);
+        std::fs::remove_dir_all(dir).unwrap();
+    }
+}

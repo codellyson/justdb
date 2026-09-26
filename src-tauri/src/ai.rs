@@ -98,6 +98,8 @@ pub struct AiStatus {
     pub provider: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub model: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub custom_model: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -138,12 +140,14 @@ pub fn status() -> Result<AiStatus, String> {
         Some(c) => AiStatus {
             configured: true,
             model: Some(c.resolved_model()?),
+            custom_model: c.model,
             provider: Some(c.provider),
         },
         None => AiStatus {
             configured: false,
             provider: None,
             model: None,
+            custom_model: None,
         },
     })
 }
@@ -187,12 +191,26 @@ pub fn set_key(provider: String, api_key: String, model: Option<String>) -> Resu
     // Validate the provider name up front so a typo fails at save time rather
     // than on the first generate.
     let p = Provider::parse(&provider)?;
-    if !p.is_local() && api_key.trim().is_empty() {
-        return Err("API key is empty".to_string());
-    }
+    // A blank key keeps the stored credential only when editing the same
+    // provider. Switching providers always requires a key for that provider.
+    let resolved_key = if p.is_local() {
+        String::new()
+    } else if !api_key.trim().is_empty() {
+        api_key.trim().to_string()
+    } else {
+        match load()? {
+            Some(existing)
+                if existing.provider == provider.trim().to_lowercase()
+                    && !existing.api_key.is_empty() =>
+            {
+                existing.api_key
+            }
+            _ => return Err("API key is required for this provider".to_string()),
+        }
+    };
     let cfg = AiConfig {
         provider: provider.trim().to_lowercase(),
-        api_key: api_key.trim().to_string(),
+        api_key: resolved_key,
         model: model.filter(|m| !m.trim().is_empty()),
     };
     let json = serde_json::to_string(&cfg).map_err(|e| format!("serialize: {e}"))?;

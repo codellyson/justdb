@@ -13,6 +13,7 @@ interface SelectProps {
   disabled?: boolean;
   searchable?: boolean;
   placeholder?: string;
+  ariaLabel?: string;
 }
 
 function optionsFromChildren(children: React.ReactNode): SelectOption[] {
@@ -39,6 +40,7 @@ export const Select: React.FC<SelectProps> = ({
   disabled,
   searchable,
   placeholder,
+  ariaLabel,
 }) => (
   <JustSelect
     value={value}
@@ -48,6 +50,7 @@ export const Select: React.FC<SelectProps> = ({
     disabled={disabled}
     searchable={searchable}
     placeholder={placeholder}
+    aria-label={ariaLabel}
     className={[containerClassName, className].filter(Boolean).join(' ') || undefined}
   />
 );

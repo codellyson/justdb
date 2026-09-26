@@ -11,10 +11,12 @@ export interface DBConfig {
   // refusal.
   ssl?: boolean;
   type?: "postgresql" | "mysql" | "sqlite";
-  /** File path or libsql:// URL (only used when type is "sqlite") */
+  /** File path, libsql:// URL, or d1://account/database URL (SQLite dialect). */
   filepath?: string;
-  /** Auth token for Turso/libSQL remote databases */
+  /** Auth token for Turso/libSQL or Cloudflare D1; saved in the OS keychain. */
   authToken?: string;
+  /** Open local SQLite without write access (used for local D1 state). */
+  readOnly?: boolean;
 }
 
 export interface SavedConnection {

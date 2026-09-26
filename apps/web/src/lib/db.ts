@@ -141,6 +141,30 @@ interface HealthState {
   idleConnections?: number;
 }
 
+export interface LocalDatabase {
+  host: string;
+  port: number;
+  dbType: "postgresql";
+}
+
+export interface LocalSqliteFile {
+  path: string;
+  name: string;
+  source: 'sqlite' | 'd1-local';
+  project?: string;
+}
+
+export interface D1Database {
+  uuid: string;
+  name: string;
+}
+
+const discoverLocal = () => invoke<LocalDatabase[]>("db_discover_local");
+const discoverSqlite = (folder?: string) =>
+  invoke<LocalSqliteFile[]>("db_discover_sqlite", { folder });
+const listD1Databases = (accountId: string, apiToken: string) =>
+  invoke<D1Database[]>("db_d1_list", { accountId, apiToken });
+
 async function health(): Promise<HealthState> {
   if (!sessionId) {
     return { healthy: false, latency: null, activeConnections: 0, idleConnections: 0 };
@@ -395,6 +419,9 @@ export const db = {
   disconnect,
   disconnectId,
   health,
+  discoverLocal,
+  discoverSqlite,
+  listD1Databases,
   isConnected: () => sessionId !== null,
 
   // listings

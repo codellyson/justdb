@@ -1,14 +1,17 @@
+import { ProposedSqlCard } from './proposed-sql-card';
+import { AiErrorNotice } from './ai-error-notice';
+import { aiErrorText } from '@/lib/ai-error';
 import React, { useState, useEffect, useLayoutEffect, useRef, useCallback, useMemo } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { ai, PROVIDERS, type ChatStep, type AiStatus } from '@/lib/ai';
 import { useConnection } from '../contexts/connection-context';
-import { useDashboardActions } from '../contexts/dashboard-context';
+import { useDashboardActions, useDashboardState } from '../contexts/dashboard-context';
 import { useToast } from '../contexts/toast-context';
 import { useAiSchemaText } from '../hooks/use-ai-schema';
 import { useChatHistory, type UiMessage } from '../hooks/use-chat-history';
-import { AlignLeft, ArrowUp, Check, Loader2, Pencil, Plus, Sparkles, X } from 'lucide-react';
-import { Button, Input, Select, Textarea, Tooltip } from '@codellyson/justui/react';
+import { ArrowRight, ArrowUp, BarChart3, Check, History, Link2, Loader2, Pencil, Search, ShieldCheck, Sparkles, SquarePen, Table2, X } from 'lucide-react';
+import { Button, Input, Select, Textarea } from '@codellyson/justui/react';
 interface AiChatPanelProps {
   onClose: () => void;
 }
@@ -106,7 +109,19 @@ const AI_DOCK_MAX = 760;
 const AI_DOCK_DEFAULT = 420;
 
 export const AiChatPanel: React.FC<AiChatPanelProps> = ({ onClose }) => {
-  const { databaseType, databaseName, isConnected } = useConnection();
+  const { databaseType, databaseName, isConnected, currentConnectionId, savedConnections } = useConnection();
+  const { selectedTable, selectedSchema, tables, isLoadingTables } = useDashboardState();
+  const [dismissedContext, setDismissedContext] = useState<string | null>(null);
+  const contextKey = `${databaseName}:${selectedSchema}:${selectedTable}`;
+  const contextTable = dismissedContext === contextKey ? undefined : selectedTable;
+  const connection = savedConnections.find((item) => item.id === currentConnectionId);
+  const isD1 = connection?.config.filepath?.startsWith('d1://');
+  const databaseLabel = connection?.name || databaseName || 'Database';
+  const suggestions = [
+    { icon: BarChart3, text: contextTable ? `How many rows are in ${contextTable}?` : 'How many rows are in each table?' },
+    { icon: Link2, text: contextTable ? `How does ${contextTable} relate to other tables?` : 'How are the tables related?' },
+    { icon: Search, text: contextTable ? `Which columns in ${contextTable} have missing values?` : 'Which tables have missing values?' },
+  ];
   const { openEditorTab } = useDashboardActions();
   const { addToast } = useToast();
   const schemaText = useAiSchemaText({ allowCompact: true });
@@ -209,14 +224,14 @@ export const AiChatPanel: React.FC<AiChatPanelProps> = ({ onClose }) => {
     }
   }, [draftKey]);
 
-  // Auto-size the composer: one line, grow with content, cap then scroll.
+  // Start with two lines, grow with content, cap then scroll.
   const MAX_INPUT_PX = 160;
   useLayoutEffect(() => {
     const el = inputRef.current;
     if (!el) return;
     el.style.height = 'auto';
-    el.style.height = `${Math.min(el.scrollHeight, MAX_INPUT_PX)}px`;
-  }, [input]);
+    el.style.height = `${Math.max(64, Math.min(el.scrollHeight, MAX_INPUT_PX))}px`;
+  }, [input, dockWidth]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
@@ -235,9 +250,9 @@ export const AiChatPanel: React.FC<AiChatPanelProps> = ({ onClose }) => {
     }
   }, [draftKey]);
 
-  const send = useCallback(async () => {
-    const text = input.trim();
-    if (!text || isBusy) return;
+  const send = useCallback(async (prompt?: string) => {
+    const text = (prompt ?? input).trim();
+    if (!text || isBusy || !isConnected || !status?.configured) return;
     setError(null);
     setHistIdx(null);
     const history: UiMessage[] = [...messages, { role: 'user', content: text }];
@@ -247,13 +262,17 @@ export const AiChatPanel: React.FC<AiChatPanelProps> = ({ onClose }) => {
     setIsBusy(true);
     setLiveSteps([]);
     setLiveText('');
-    const unlistenStep = await ai.onChatStep((s) => setLiveSteps((prev) => [...prev, s]));
-    const unlistenToken = await ai.onChatToken((t) => setLiveText((prev) => prev + t));
+    let unlistenStep = () => {};
+    let unlistenToken = () => {};
     try {
+      unlistenStep = await ai.onChatStep((s) => setLiveSteps((prev) => [...prev, s]));
+      unlistenToken = await ai.onChatToken((t) => setLiveText((prev) => prev + t));
       const res = await ai.chat({
         messages: history.map((m) => ({ role: m.role, content: m.content })),
         dialect: databaseType,
-        schema: schemaText,
+        schema: contextTable
+          ? `${schemaText}\n\nThe user selected ${JSON.stringify(contextTable)} in schema ${JSON.stringify(selectedSchema)} as context. Other tables may still be used.`
+          : schemaText,
         model: chatModel || undefined,
       });
       setMessages([
@@ -261,7 +280,7 @@ export const AiChatPanel: React.FC<AiChatPanelProps> = ({ onClose }) => {
         { role: 'assistant', content: res.reply, steps: res.steps, proposedWrites: res.proposedWrites },
       ]);
     } catch (e: any) {
-      setError(e?.message || 'AI request failed');
+      setError(aiErrorText(e));
     } finally {
       unlistenStep();
       unlistenToken();
@@ -269,12 +288,12 @@ export const AiChatPanel: React.FC<AiChatPanelProps> = ({ onClose }) => {
       setLiveText('');
       setIsBusy(false);
     }
-  }, [input, isBusy, messages, databaseType, schemaText, setMessages, draftKey, chatModel]);
+  }, [input, isBusy, messages, databaseType, schemaText, setMessages, draftKey, chatModel, isConnected, status?.configured, contextTable, selectedSchema]);
 
   // ↑/↓ recall of previously sent prompts (only when the input is empty or
   // already navigating, so it doesn't hijack multi-line cursor movement).
   const onKeyDown = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
       e.preventDefault();
       send();
       return;
@@ -297,11 +316,15 @@ export const AiChatPanel: React.FC<AiChatPanelProps> = ({ onClose }) => {
     }
   }, [send, sentPrompts, input, histIdx]);
 
-  const copySql = useCallback((sql: string) => {
-    navigator.clipboard?.writeText(sql).then(
-      () => addToast('SQL copied — paste into the SQL editor to review and run', 'success'),
-      () => addToast('Could not copy SQL', 'error'),
-    );
+  const copySql = useCallback(async (sql: string): Promise<boolean> => {
+    try {
+      await navigator.clipboard.writeText(sql);
+      addToast('SQL copied — paste into the SQL editor to review and run', 'success');
+      return true;
+    } catch {
+      addToast('Could not copy SQL', 'error');
+      return false;
+    }
   }, [addToast]);
 
   const openInEditor = useCallback((sql: string) => {
@@ -338,38 +361,36 @@ export const AiChatPanel: React.FC<AiChatPanelProps> = ({ onClose }) => {
         aria-label="Resize AI panel"
       />
       {/* Header */}
-      <div className="flex items-center justify-between px-3 py-2.5 border-b border-border flex-shrink-0">
-        <div className="flex items-center gap-2 text-sm font-medium text-primary min-w-0">
+      <div className="flex items-center justify-between px-5 py-4 border-b border-border flex-shrink-0">
+        <div className="flex items-center gap-2.5 text-base font-semibold text-primary min-w-0">
           <span className="text-accent flex-shrink-0"><SparkleIcon /></span>
-          AI mode
-          {status?.configured && status.model && (
-            <span className="text-[10px] text-muted font-normal truncate">{status.model}</span>
-          )}
+          Ask AI
         </div>
         <div className="flex items-center gap-1 flex-shrink-0">
           <button
-            onClick={() => { newChat(); setShowChats(false); setError(null); }}
-            className="w-7 h-7 flex items-center justify-center rounded-sm text-muted hover:text-accent hover:bg-accent/10 transition-colors"
-            title="New chat"
-            aria-label="New chat"
+            onClick={() => { newChat(); setShowChats(false); setError(null); inputRef.current?.focus(); }}
+            disabled={isBusy}
+            className="size-9 flex items-center justify-center rounded-lg disabled:opacity-40 text-muted hover:text-accent hover:bg-accent/10 transition-colors"
+            title="New conversation"
+            aria-label="New conversation"
           >
-            <Plus className="w-4 h-4" />
+            <SquarePen className="w-4 h-4" />
           </button>
           <button
             onClick={() => setShowChats((v) => !v)}
-            className={`h-7 px-1.5 flex items-center gap-1 rounded-sm text-xs transition-colors ${showChats ? 'text-accent bg-accent/15' : 'text-muted hover:text-primary hover:bg-bg-secondary'}`}
-            title="Conversations"
-            aria-label="Conversations"
+            disabled={isBusy || conversations.length === 0}
+            className={`size-9 flex items-center justify-center rounded-lg text-xs transition-colors disabled:opacity-40 ${showChats ? 'text-accent bg-accent/15' : 'text-muted hover:text-primary hover:bg-bg-secondary'}`}
+            title={conversations.length ? "History" : "No conversation history yet"}
+            aria-label="History"
             aria-expanded={showChats}
           >
-            <AlignLeft className="w-3.5 h-3.5" />
-            {conversations.length > 0 && <span className="font-mono">{conversations.length}</span>}
+            <History className="w-4 h-4" />
           </button>
           <button
             onClick={onClose}
-            className="w-7 h-7 flex items-center justify-center rounded-sm text-muted hover:text-primary hover:bg-bg-secondary transition-colors"
-            title="Close AI mode"
-            aria-label="Close AI mode"
+            className="size-9 flex items-center justify-center rounded-lg disabled:opacity-40 text-muted hover:text-primary hover:bg-bg-secondary transition-colors"
+            title="Close AI dock"
+            aria-label="Close AI dock"
           >
             <X className="w-4 h-4" />
           </button>
@@ -402,7 +423,8 @@ export const AiChatPanel: React.FC<AiChatPanelProps> = ({ onClose }) => {
                   />
                 ) : (
                   <button
-                    onClick={() => { selectChat(c.id); setShowChats(false); }}
+                    disabled={isBusy}
+                    onClick={() => { selectChat(c.id); setShowChats(false); setError(null); }}
                     className={`flex-1 min-w-0 text-left text-xs truncate ${c.id === activeId ? 'text-accent font-medium' : 'text-primary'}`}
                     title={c.title}
                   >
@@ -418,6 +440,7 @@ export const AiChatPanel: React.FC<AiChatPanelProps> = ({ onClose }) => {
                   <Pencil className="w-3 h-3" />
                 </Button>
                 <Button
+                  disabled={isBusy}
                   onClick={() => deleteChat(c.id)}
                   className="w-6 h-6 flex items-center justify-center rounded-sm text-muted hover:text-danger hover:bg-danger/10 transition-colors flex-shrink-0"
                   title="Delete"
@@ -431,25 +454,45 @@ export const AiChatPanel: React.FC<AiChatPanelProps> = ({ onClose }) => {
         </div>
       )}
 
+      {/* Connection context stays visible throughout the conversation. */}
+      {isConnected && (
+        <div className="px-5 pt-5 pb-2 shrink-0">
+          <div className="inline-flex max-w-full items-center gap-2 rounded-full border border-border px-2.5 py-1.5 text-xs text-secondary" title={databaseLabel}>
+            <span className={`shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-semibold ${isD1 ? 'bg-amber-500/15 text-amber-400' : 'bg-accent/10 text-accent'}`}>
+              {isD1 ? 'D1' : databaseType === 'postgresql' ? 'PG' : databaseType === 'sqlite' ? 'SQLite' : 'MySQL'}
+            </span>
+            <span className="truncate">{databaseLabel}</span>
+            {!isLoadingTables && <span className="shrink-0 text-muted">· {tables.length} {tables.length === 1 ? 'table' : 'tables'}</span>}
+          </div>
+        </div>
+      )}
+
       {/* Messages */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto px-3 py-3 space-y-4">
-        {!isConnected && (
-          <p className="text-sm text-muted">Connect to a database to use AI mode.</p>
-        )}
+      <div ref={scrollRef} className="flex-1 min-h-0 overflow-y-auto px-5 py-4 space-y-4">
+        {!isConnected && <p className="text-sm text-muted">Connect to a database to ask AI about your data.</p>}
         {status && !status.configured && (
-          <p className="text-sm text-muted">
-            Add an API key first — open a SQL editor tab and use the AI bar above the editor to
-            connect a provider, then come back here.
-          </p>
+          <div className="space-y-3 text-sm text-secondary">
+            <p>Connect an AI provider to start asking questions about your data.</p>
+            <button type="button" onClick={() => window.dispatchEvent(new CustomEvent('justdb:open-settings', { detail: { tab: 'ai' } }))} className="text-accent hover:underline">Set up AI in Settings</button>
+          </div>
         )}
         {messages.length === 0 && isConnected && status?.configured && (
-          <div className="text-sm text-muted space-y-2">
-            <p>Ask anything about your data. The assistant runs read-only queries itself to answer.</p>
-            <ul className="text-xs space-y-1 list-disc list-inside text-muted/80">
-              <li>"Which 10 customers spent the most last month?"</li>
-              <li>"How many orders have no shipping address?"</li>
-              <li>"What's the schema relationship between users and teams?"</li>
-            </ul>
+          <div className="space-y-6">
+            <div>
+              <h2 className="text-xl font-semibold tracking-tight text-primary">Ask anything about your data</h2>
+              <p className="mt-3 text-sm leading-relaxed text-secondary">Ask questions, explore relationships, or draft SQL.</p>
+            </div>
+            <div className="space-y-2">
+              <p className="mb-2 text-[11px] font-medium uppercase tracking-wider text-muted">Try asking</p>
+              {suggestions.map(({ icon: Icon, text }) => (
+                <button key={text} type="button" onClick={() => void send(text)} disabled={disabled}
+                  className="flex min-h-14 w-full items-center gap-3 rounded-xl border border-border bg-bg-secondary/30 p-3 text-left text-sm text-primary hover:bg-bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent disabled:opacity-40 transition-transform duration-150 ease-out active:scale-[0.96] motion-reduce:transition-none motion-reduce:active:scale-100">
+                  <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-accent/10 text-accent"><Icon className="size-4" strokeWidth={1.5} /></span>
+                  <span className="flex-1">{text}</span>
+                  <ArrowRight className="size-4 shrink-0 text-muted" aria-hidden="true" />
+                </button>
+              ))}
+            </div>
           </div>
         )}
 
@@ -478,29 +521,7 @@ export const AiChatPanel: React.FC<AiChatPanelProps> = ({ onClose }) => {
               {m.proposedWrites && m.proposedWrites.length > 0 && (
                 <div className="mt-2 space-y-2">
                   {m.proposedWrites.map((sql, wi) => (
-                    <div key={wi} className="border border-warning/40 bg-warning/5 rounded-md p-2">
-                      <div className="flex items-center justify-between mb-1 gap-2">
-                        <span className="text-[10px] font-medium uppercase tracking-wide text-warning">
-                          Proposed change — review before running
-                        </span>
-                        <div className="flex items-center gap-1 flex-shrink-0">
-                          <Button
-                            onClick={() => openInEditor(sql)}
-                            className="text-[11px] px-1.5 py-0.5 rounded-sm bg-accent text-white hover:bg-accent-hover transition-colors"
-                            title="Open in a SQL editor tab (you'll confirm before it runs)"
-                          >
-                            Open in editor
-                          </Button>
-                          <Button
-                            onClick={() => copySql(sql)}
-                            className="text-[11px] px-1.5 py-0.5 rounded-sm text-accent hover:bg-accent/10 transition-colors"
-                          >
-                            Copy
-                          </Button>
-                        </div>
-                      </div>
-                      <code className="block font-mono text-[11px] text-primary whitespace-pre-wrap break-all">{sql}</code>
-                    </div>
+                    <ProposedSqlCard key={wi} sql={sql} onReview={openInEditor} onCopy={copySql} />
                   ))}
                 </div>
               )}
@@ -528,53 +549,69 @@ export const AiChatPanel: React.FC<AiChatPanelProps> = ({ onClose }) => {
             )}
           </div>
         )}
-        {error && <p className="text-sm text-danger" role="alert">{error}</p>}
+        {error && <AiErrorNotice message={error} provider={status?.provider} />}
       </div>
 
       {/* Composer */}
-      <div className="border-t border-border p-2.5 flex-shrink-0">
-        <div className="border border-border rounded-xl bg-bg focus-within:ring-2 focus-within:ring-accent transition-colors">
+      <div className="border-t border-border p-4 flex-shrink-0">
+        <div className="ai-composer rounded-xl border border-border bg-bg focus-within:border-accent focus-within:ring-1 focus-within:ring-accent">
+          {contextTable && (
+            <div className="px-3 pt-3">
+              <span className="inline-flex max-w-full items-center gap-1.5 rounded-md bg-bg-secondary px-2 py-1 text-xs text-secondary" title="Context for your next question; other tables can still be queried.">
+                <Table2 className="size-3.5 shrink-0" aria-hidden="true" />
+                <span className="shrink-0 text-muted">Context:</span>
+                <span className="truncate font-mono">{contextTable}</span>
+                <button type="button" onClick={() => setDismissedContext(contextKey)} className="flex size-6 shrink-0 items-center justify-center rounded hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent" aria-label={`Remove ${contextTable} from context`}><X className="size-3" /></button>
+              </span>
+            </div>
+          )}
           <Textarea
             ref={inputRef}
             value={input}
             onChange={onInputChange}
             onKeyDown={onKeyDown}
             disabled={disabled}
-            rows={1}
-            placeholder="Ask about your data…  (↑ recalls previous)"
+            rows={2}
+            placeholder="Ask about your data…"
+            aria-label="Ask about your data"
             containerClassName="contents"
             className="block w-full resize-none overflow-y-auto border-0 bg-transparent min-h-0 rounded-none px-3 pt-2.5 pb-1 text-sm leading-relaxed focus-visible:ring-0"
           />
-          <div className="flex items-center justify-between gap-2 px-2 pb-2 pt-0.5">
+          <div className="flex items-center gap-3 px-3 pb-3 pt-2">
             {status?.configured && modelOptions.length > 0 ? (
-              <Tooltip label="Model used for AI mode">
-                <Select
-                  value={chatModel}
-                  onChange={onModelChange}
-                  disabled={isBusy}
-                  aria-label="AI mode model"
-                  options={modelOptions.map((m) => ({ value: m, label: m }))}
-                  size="xs"
-                  className="max-w-[60%] text-[10px] text-muted bg-transparent border-0 truncate"
-                />
-              </Tooltip>
-
+              <Select
+                value={chatModel}
+                onChange={onModelChange}
+                disabled={isBusy}
+                label="AI model"
+                labelClassName="sr-only"
+                options={modelOptions.map((m) => ({ value: m, label: m }))}
+                size="sm"
+                containerClassName="min-w-0 flex-1"
+                className="w-full border-0 bg-transparent px-2 text-xs text-secondary hover:bg-bg-secondary [&>span:first-child]:flex-1 [&>span:first-child]:text-left"
+              />
             ) : (
-              <span className="text-[10px] text-muted px-1 truncate">{status?.model ?? ''}</span>
+              <span className="min-w-0 flex-1 truncate text-xs text-muted">{status?.model ?? 'AI model'}</span>
             )}
-            <Button
-              onClick={send}
+            <button
+              type="button"
+              onClick={() => void send()}
               disabled={disabled || !input.trim()}
-              className="w-7 h-7 flex items-center justify-center rounded-full   text-white hover:bg-accent-hover disabled:opacity-30 disabled:cursor-not-allowed transition-colors flex-shrink-0"
-              title="Send (Enter)"
-              aria-label="Send"
+              className="ml-auto flex size-9 shrink-0 items-center justify-center rounded-lg bg-accent text-bg hover:bg-accent-hover disabled:bg-bg-secondary disabled:text-muted disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg transition-transform duration-150 ease-out enabled:active:scale-[0.96] motion-reduce:transition-none motion-reduce:active:scale-100"
+              title={isBusy ? 'Generating response…' : 'Send message (Enter)'}
+              aria-label={isBusy ? 'Generating response' : 'Send message'}
             >
-              <ArrowUp className="w-3.5 h-3.5" />
-            </Button>
+              {isBusy ? <Loader2 className="size-4 animate-spin motion-reduce:animate-none" aria-hidden="true" /> : <ArrowUp className="size-4" strokeWidth={2} aria-hidden="true" />}
+            </button>
           </div>
         </div>
-        <p className="mt-2 text-[10px] text-muted px-1">
-          Reads run automatically. Changes are proposed for you to run via the SQL editor.
+        <div className="mt-2 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 px-1 text-[10px] text-muted">
+          <span>Enter to send · Shift+Enter for a new line</span>
+          {sentPrompts.length > 0 && (input === '' || histIdx !== null) && <span>↑ previous prompt</span>}
+        </div>
+        <p className="mt-2.5 flex items-start gap-1.5 text-[11px] leading-relaxed text-muted px-1">
+          <ShieldCheck className="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
+          Reads run automatically · review and run changes in the SQL editor.
         </p>
       </div>
     </div>

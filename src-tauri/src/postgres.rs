@@ -83,6 +83,8 @@ pub struct DbConfig {
     pub filepath: Option<String>,
     #[serde(default)]
     pub auth_token: Option<String>,
+    #[serde(default)]
+    pub read_only: bool,
 }
 
 #[derive(Debug, Serialize)]

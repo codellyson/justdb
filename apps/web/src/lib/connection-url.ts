@@ -38,6 +38,7 @@ export function describeConnection(config: {
 }): string {
   if (config.type === "sqlite") {
     const target = config.filepath || config.database;
+    if (/^d1:\/\//i.test(target)) return `Cloudflare D1 · ${config.database}`;
     return /^libsql:\/\//i.test(target) ? target : basename(target);
   }
   return `${config.host}:${config.port}/${config.database}`;
