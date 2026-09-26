@@ -1,124 +1,49 @@
 ---
-import Button from './Button.astro';
-import { LAUNCH_URL, REPO_URL, RELEASES_URL } from '../lib/site';
-
-interface Props {
-  /** Anchors only resolve on the landing page; other pages link back to it. */
-  home?: boolean;
-}
+import { LAUNCH_URL, RELEASES_URL, REPO_URL } from '../lib/site';
+interface Props { home?: boolean; }
 const { home = false } = Astro.props;
-const p = (hash: string) => (home ? hash : `/${hash}`);
-
-const links = [
-  { label: 'Features', href: p('#features') },
-  { label: 'Compare', href: '/compare' },
-  { label: 'Guides', href: '/guides' },
-  { label: 'FAQ', href: p('#faq') },
-];
 ---
-
-<header
-  id="site-nav"
-  class="sticky top-0 z-50 border-b border-transparent transition-[background-color,border-color,backdrop-filter] duration-300"
->
-  <nav class="mx-auto flex h-16 max-w-shell items-center gap-6 px-5 sm:px-8" aria-label="Main">
-    <a href="/" class="flex items-center gap-2.5 font-semibold tracking-tight text-primary">
-      <img src="/logo.svg" alt="" width="26" height="26" class="rounded-[5px]" aria-hidden="true" />
-      <span class="text-[15px]">JustDB</span>
-    </a>
-
-    <ul class="ml-4 hidden items-center gap-1 md:flex">
-      {links.map(({ label, href }) => (
-        <li>
-          <a
-            href={href}
-            class="rounded-md px-3 py-2 text-sm text-secondary transition-colors hover:bg-bg-secondary hover:text-primary"
-          >
-            {label}
-          </a>
-        </li>
-      ))}
-    </ul>
-
-    <div class="ml-auto flex items-center gap-2">
-      <a
-        href={REPO_URL}
-        target="_blank"
-        rel="noopener noreferrer"
-        class="hidden rounded-md px-3 py-2 text-sm text-secondary transition-colors hover:bg-bg-secondary hover:text-primary sm:inline-flex"
-      >
-        GitHub
-      </a>
-      <Button href={LAUNCH_URL} id="nav-open-app" data-fallback={RELEASES_URL} class="hidden sm:inline-flex">
-        Open JustDB
-      </Button>
-
-      <button
-        type="button"
-        id="nav-toggle"
-        class="-mr-2 inline-flex h-10 w-10 items-center justify-center rounded-md text-secondary transition-colors hover:bg-bg-secondary hover:text-primary md:hidden"
-        aria-label="Open menu"
-        aria-controls="nav-menu"
-        aria-expanded="false"
-      >
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true">
-          <line x1="4" y1="7" x2="20" y2="7"></line>
-          <line x1="4" y1="12" x2="20" y2="12"></line>
-          <line x1="4" y1="17" x2="20" y2="17"></line>
-        </svg>
-      </button>
+<div class="site-nav-wrap">
+  <nav class="site-nav" aria-label="Main">
+    <a class="site-brand" href="/" aria-label="JustDB home"><img src="/logo.svg" alt="" width="28" height="28" /><span>just<strong>db</strong></span></a>
+    <div class="site-links"><a href={home ? '#features' : '/#features'}>Features</a><a href="/blog" aria-current={Astro.url.pathname.startsWith('/blog') ? 'page' : undefined}>Blog</a><a href={REPO_URL}>GitHub ↗</a></div>
+    <div class="site-actions">
+      <button id="theme-toggle" type="button" aria-label="Switch to light theme" aria-pressed="false" title="Toggle light/dark">☼</button>
+      <a class="site-open" href={LAUNCH_URL} data-fallback={RELEASES_URL}>Open JustDB</a>
     </div>
   </nav>
-
-  <div
-    id="nav-menu"
-    hidden
-    class="border-t border-border bg-bg/95 backdrop-blur-xl md:hidden"
-  >
-    <ul class="mx-auto flex max-w-shell flex-col gap-1 px-5 py-4 sm:px-8">
-      {[...links, { label: 'GitHub', href: REPO_URL }].map(({ label, href }) => (
-        <li>
-          <a
-            href={href}
-            class="block rounded-md px-3 py-2.5 text-[15px] text-secondary transition-colors hover:bg-bg-secondary hover:text-primary"
-          >
-            {label}
-          </a>
-        </li>
-      ))}
-      <li class="pt-2">
-        <Button href={LAUNCH_URL} class="w-full" data-fallback={RELEASES_URL}>Open JustDB</Button>
-      </li>
-    </ul>
-  </div>
-</header>
-
+</div>
+<style>
+  .site-nav-wrap { position:sticky; top:0; z-index:50; background:rgb(var(--bg)); border-bottom:1px solid rgb(var(--border)); color:rgb(var(--text-primary)); }
+  .site-nav { display:flex; align-items:center; gap:40px; height:64px; width:100%; max-width:1248px; margin-inline:auto; padding-inline:24px; }
+  .site-brand,.site-actions,.site-links { display:flex; align-items:center; gap:12px; }
+  .site-brand { font-size:18px; text-decoration:none; flex-shrink:0; }
+  .site-brand strong { font-weight:600; }.site-brand img { border-radius:4px; }
+  .site-links { gap:26px; font-size:13px; color:rgb(var(--text-secondary)); }
+  .site-links a:hover,.site-links a[aria-current] { color:rgb(var(--text-primary)); }
+  .site-actions { margin-left:auto; }
+  .site-actions button { width:36px; height:36px; border:1px solid rgb(var(--border)); border-radius:6px; font-size:22px; color:rgb(var(--text-secondary)); }
+  .site-actions button:hover { background:rgb(var(--bg-elevated)); }
+  .site-open { display:inline-flex; justify-content:center; align-items:center; min-height:34px; padding:7px 13px; border:1px solid rgb(var(--accent)); border-radius:6px; background:rgb(var(--accent)); color:rgb(var(--accent-text)); font-size:13px; font-weight:500; text-decoration:none; white-space:nowrap; }
+  .site-open:hover { background:rgb(var(--accent-hover)); }
+  @media(max-width:760px) { .site-nav { gap:20px; }.site-links { gap:16px; }.site-links a:last-child { display:none; } }
+  @media(max-width:480px) { .site-links { display:none; }.site-nav { gap:12px; padding-inline:16px; }.site-actions { gap:8px; } }
+</style>
 <script>
-  const nav = document.getElementById('site-nav');
-  const toggle = document.getElementById('nav-toggle');
-  const menu = document.getElementById('nav-menu');
-
-  // Transparent over the hero, frosted once the page moves — a hard border at
-  // scrollTop 0 cuts the hero in half.
-  const solid = ['bg-bg/80', 'backdrop-blur-xl', 'border-border'];
-  const onScroll = () => {
-    nav?.classList.toggle('border-transparent', window.scrollY <= 8);
-    solid.forEach((c) => nav?.classList.toggle(c, window.scrollY > 8));
+  const toggle = document.getElementById('theme-toggle');
+  const applyTheme = (light: boolean) => {
+    document.documentElement.dataset.theme = light ? 'light' : 'dark';
+    const landing = document.getElementById('landing');
+    if (landing) landing.dataset.theme = light ? 'light' : 'dark';
+    toggle?.setAttribute('aria-pressed', String(light));
+    toggle?.setAttribute('aria-label', light ? 'Switch to dark theme' : 'Switch to light theme');
   };
-  onScroll();
-  window.addEventListener('scroll', onScroll, { passive: true });
-
-  const setOpen = (open: boolean) => {
-    if (!menu || !toggle) return;
-    menu.hidden = !open;
-    toggle.setAttribute('aria-expanded', String(open));
-    toggle.setAttribute('aria-label', open ? 'Close menu' : 'Open menu');
-  };
-  toggle?.addEventListener('click', () => setOpen(menu?.hidden ?? true));
-  menu?.addEventListener('click', (e) => {
-    if ((e.target as HTMLElement).closest('a')) setOpen(false);
-  });
-  window.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') setOpen(false);
+  let light = false;
+  try { light = localStorage.getItem('justdb-site-theme') === 'light'; } catch {}
+  applyTheme(light);
+  toggle?.addEventListener('click', () => {
+    light = document.documentElement.dataset.theme !== 'light';
+    applyTheme(light);
+    try { localStorage.setItem('justdb-site-theme', light ? 'light' : 'dark'); } catch {}
   });
 </script>

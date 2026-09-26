@@ -1,124 +1,64 @@
-
-import React, { createContext, useContext, useState, useEffect, useMemo } from "react";
-import {
-  BUILT_IN_THEMES,
-  DEFAULT_THEME_ID,
-  applyThemeVariant,
-  findTheme,
-  type ThemePlugin,
-} from "@/lib/theme-plugins";
-import { isTauriRuntime } from "@/lib/runtime";
-
-type Mode = "light" | "dark";
+import React, { createContext, useContext, useState, useEffect, useLayoutEffect } from 'react';
+import { PALETTES, applyThemeVariant, parseAppearance, resolveMode, type Appearance, type Mode } from '@/lib/theme-plugins';
+import { isTauriRuntime } from '@/lib/runtime';
 
 interface ThemeContextType {
   mode: Mode;
+  appearance: Appearance;
+  setAppearance: (appearance: Appearance) => void;
   toggleMode: () => void;
-  /** Active theme plugin id. */
-  themeId: string;
-  setThemeId: (id: string) => void;
-  /** All registered theme plugins (built-ins for now; pluggable in future). */
-  themes: ThemePlugin[];
-  /** Active theme plugin object — sugar for `findTheme(themeId)`. */
-  theme: ThemePlugin;
 }
-
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
-
-const MODE_KEY = "dbview-mode";
-const THEME_KEY = "dbview-theme";
-
+const MODE_KEY = 'dbview-mode';
+function readAppearance(): Appearance {
+  try { return parseAppearance(localStorage.getItem(MODE_KEY)); } catch { return 'system'; }
+}
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [mode, setMode] = useState<Mode>("light");
-  const [themeId, setThemeIdState] = useState<string>(DEFAULT_THEME_ID);
-  const [mounted, setMounted] = useState(false);
+  // Existing light/dark preferences survive removal of the named theme presets.
+  const [appearance, setAppearance] = useState<Appearance>(readAppearance);
+  const [systemDark, setSystemDark] = useState(() => window.matchMedia('(prefers-color-scheme: dark)').matches);
+  const mode = resolveMode(appearance, systemDark);
 
-  // Hydrate from localStorage / system preference.
   useEffect(() => {
-    const storedMode = localStorage.getItem(MODE_KEY) as Mode | null;
-    if (storedMode === "light" || storedMode === "dark") {
-      setMode(storedMode);
-    } else if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
-      setMode("dark");
-    }
-
-    const storedTheme = localStorage.getItem(THEME_KEY);
-    if (storedTheme && BUILT_IN_THEMES.some((t) => t.id === storedTheme)) {
-      setThemeIdState(storedTheme);
-    }
-
-    setMounted(true);
+    const media = window.matchMedia('(prefers-color-scheme: dark)');
+    const sync = () => setSystemDark(media.matches);
+    sync();
+    media.addEventListener('change', sync);
+    return () => media.removeEventListener('change', sync);
   }, []);
 
-  // Toggle the `.dark` class so Tailwind's `dark:` utilities still work,
-  // and persist the mode.
-  useEffect(() => {
-    if (!mounted) return;
+  useLayoutEffect(() => {
     const root = document.documentElement;
-    if (mode === "dark") root.classList.add("dark");
-    else root.classList.remove("dark");
-    localStorage.setItem(MODE_KEY, mode);
-  }, [mode, mounted]);
+    root.classList.toggle('dark', mode === 'dark');
+    root.style.colorScheme = mode;
+    root.dataset.theme = 'justdb';
+    applyThemeVariant(PALETTES[mode]);
+  }, [mode]);
 
-  // Apply the active theme variant whenever theme or mode changes.
   useEffect(() => {
-    if (!mounted) return;
-    const t = findTheme(themeId);
-    applyThemeVariant(mode === "dark" ? t.dark : t.light);
-    document.documentElement.dataset.theme = t.id;
-    localStorage.setItem(THEME_KEY, t.id);
-  }, [themeId, mode, mounted]);
+    try {
+      localStorage.setItem(MODE_KEY, appearance);
+      localStorage.removeItem('dbview-theme');
+    } catch { /* Appearance still works when storage is unavailable. */ }
+  }, [appearance]);
 
-  // Sync native window chrome with the active theme when running in Tauri:
-  //   - setTheme keeps scrollbars / context menus in the right palette
-  //   - setBackgroundColor matches the OS window bg to the theme's page bg,
-  //     which prevents the white flash that would otherwise show during
-  //     resize before the webview repaints (decorations are off)
   useEffect(() => {
-    if (!mounted || !isTauriRuntime()) return;
-    const t = findTheme(themeId);
-    const variant = mode === "dark" ? t.dark : t.light;
-    const [r, g, b] = variant.bg.split(" ").map(Number) as [number, number, number];
+    if (!isTauriRuntime()) return;
     let cancelled = false;
     (async () => {
-      const { getCurrentWindow } = await import("@tauri-apps/api/window");
+      const { getCurrentWindow } = await import('@tauri-apps/api/window');
       if (cancelled) return;
       const win = getCurrentWindow();
-      await Promise.all([
-        win.setTheme(mode),
-        win.setBackgroundColor([r, g, b]),
-      ]);
-    })().catch((err) => {
-      console.error("[theme] tauri sync failed:", err);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [mode, themeId, mounted]);
+      const [r, g, b] = PALETTES[mode].bg.split(' ').map(Number);
+      await Promise.all([win.setTheme(mode), win.setBackgroundColor([r, g, b])]);
+    })().catch(err => console.error('[theme] tauri sync failed:', err));
+    return () => { cancelled = true; };
+  }, [mode]);
 
-  const theme = useMemo(() => findTheme(themeId), [themeId]);
-
-  const toggleMode = () => setMode((prev) => (prev === "light" ? "dark" : "light"));
-  const setThemeId = (id: string) => setThemeIdState(id);
-
-  return (
-    <ThemeContext.Provider
-      value={{
-        mode,
-        toggleMode,
-        themeId,
-        setThemeId,
-        themes: BUILT_IN_THEMES,
-        theme,
-      }}
-    >
-      {children}
-    </ThemeContext.Provider>
-  );
+  return <ThemeContext.Provider value={{ mode, appearance, setAppearance, toggleMode: () => setAppearance(mode === 'light' ? 'dark' : 'light') }}>{children}</ThemeContext.Provider>;
 }
-
 export function useTheme() {
-  const ctx = useContext(ThemeContext);
-  if (!ctx) throw new Error("useTheme must be used within a ThemeProvider");
-  return ctx;
+  const context = useContext(ThemeContext);
+  if (!context) throw new Error('useTheme must be used within a ThemeProvider');
+  return context;
 }

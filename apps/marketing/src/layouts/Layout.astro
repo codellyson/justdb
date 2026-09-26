@@ -9,6 +9,7 @@ interface Props {
   /** Social share image — resolved to an absolute URL against `site`. */
   ogImage?: string;
   /** open-graph type — 'website' for pages, 'article' for guides. */
+  ogImageAlt?: string;
   ogType?: 'website' | 'article';
   /** Keep the page out of search indexes (e.g. thin utility routes). */
   noindex?: boolean;
@@ -20,6 +21,7 @@ const {
   title = 'JustDB — Simple Database Client for Developers',
   description = 'JustDB is a simple database client for developers. Browse, query and edit PostgreSQL, SQLite and Turso databases from a small desktop app — free, no signup, connecting straight from your machine.',
   ogImage = '/og-image.png',
+  ogImageAlt = 'JustDB browsing a database — table list, rows, and query editor',
   ogType = 'website',
   noindex = false,
   jsonLd,
@@ -33,7 +35,7 @@ const ogImageUrl = new URL(ogImage, Astro.site).toString();
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="generator" content={Astro.generator} />
     <link rel="canonical" href={canonical} />
 
@@ -65,12 +67,13 @@ const ogImageUrl = new URL(ogImage, Astro.site).toString();
     <meta property="og:image" content={ogImageUrl} />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
-    <meta property="og:image:alt" content="JustDB browsing a database — table list, rows, and query editor" />
+    <meta property="og:image:alt" content={ogImageAlt} />
 
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content={title} />
     <meta name="twitter:description" content={description} />
     <meta name="twitter:image" content={ogImageUrl} />
+    <meta name="twitter:image:alt" content={ogImageAlt} />
 
     {jsonLd && (
       <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} is:inline />

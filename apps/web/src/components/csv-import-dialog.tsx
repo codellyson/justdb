@@ -185,7 +185,7 @@ export const CSVImportDialog: React.FC<CSVImportDialogProps> = ({
                 onChange={handleFileInput}
                 className="hidden"
               />
-              <span className="px-4 py-2 text-sm font-medium bg-accent text-white rounded-md cursor-pointer hover:bg-accent-hover transition-colors">
+              <span className="px-4 py-2 text-sm font-medium bg-accent text-[rgb(var(--accent-text))] rounded-md cursor-pointer hover:bg-accent-hover transition-colors">
                 Choose file
               </span>
             </label>
