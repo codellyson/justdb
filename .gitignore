@@ -36,3 +36,6 @@ yarn-error.log*
 # Tauri / Rust build artifacts
 src-tauri/target/
 src-tauri/gen/
+
+# Local database export containing credentials
+/scripts/fixtures/query_result_2026-06-27.json

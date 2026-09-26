@@ -5,6 +5,7 @@ import {
   Columns3,
   ListFilter,
   MoreHorizontal,
+  PanelRight,
   Plus,
   RefreshCw,
   Table,
@@ -21,6 +22,7 @@ import {
   ToolbarMenu,
 } from './ui/toolbar';
 import type { Filter } from '@/lib/filters';
+import { WhereFilterInput } from './where-filter-input';
 import { Check, X } from 'lucide-react';
 
 export type TableView = 'data' | 'structure';
@@ -40,20 +42,13 @@ interface TableToolbarProps {
   filters: Filter[];
   onRemoveFilter: (column: string) => void;
   onClearFilters: () => void;
+  onApplyFilters: (filters: Filter[]) => void;
 
   sortColumn: string | null;
   sortDirection: 'asc' | 'desc' | null;
   onSort: (column: string) => void;
   onClearSort: () => void;
 
-  currentPage: number;
-  itemsPerPage: number;
-  totalItems: number;
-  countIsEstimate?: boolean;
-  onPageChange: (page: number) => void;
-  onItemsPerPageChange: (size: number) => void;
-
-  durationMs?: number | null;
   isBusy?: boolean;
   onRefresh: () => void;
   onRefreshSchema: () => void;
@@ -65,6 +60,9 @@ interface TableToolbarProps {
   onDiscardChanges: () => void;
   onImportCsv: () => void;
   onExport: () => void;
+  inspectorOpen: boolean;
+  onToggleInspector: () => void;
+  canInspect: boolean;
 }
 
 export function TableToolbar({
@@ -78,17 +76,11 @@ export function TableToolbar({
   filters,
   onRemoveFilter,
   onClearFilters,
+  onApplyFilters,
   sortColumn,
   sortDirection,
   onSort,
   onClearSort,
-  currentPage,
-  itemsPerPage,
-  totalItems,
-  countIsEstimate,
-  onPageChange,
-  onItemsPerPageChange,
-  durationMs,
   isBusy,
   onRefresh,
   onRefreshSchema,
@@ -99,16 +91,15 @@ export function TableToolbar({
   onDiscardChanges,
   onImportCsv,
   onExport,
+  inspectorOpen,
+  onToggleInspector,
+  canInspect,
 }: TableToolbarProps) {
-  const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
-  const first = totalItems === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1;
-  const last = Math.min(currentPage * itemsPerPage, totalItems);
-  const total = countIsEstimate ? `~${totalItems.toLocaleString()}` : totalItems.toLocaleString();
   const hiddenCount = columns.length - visibleColumns.length;
   const notData = view !== 'data';
 
   return (
-    <div className="flex items-center gap-3 h-12 shrink-0 border-b border-border">
+    <div className="flex items-center gap-2 min-h-12 px-3 py-1.5 flex-wrap shrink-0 border-b border-border">
       <SegmentedControl
         value={view}
         onChange={onViewChange}
@@ -218,6 +209,8 @@ export function TableToolbar({
         </ToolbarMenu>
       </ToolbarGroup>
 
+      <WhereFilterInput filters={filters} columns={columns} onApply={onApplyFilters} disabled={notData || columns.length === 0} />
+
       <ToolbarButton
         icon={<Plus className="h-4 w-4" />}
         variant="accent"
@@ -225,7 +218,7 @@ export function TableToolbar({
         onClick={onAddRecord}
         tooltip="Add record (Alt+N)"
       >
-        <span className="hidden lg:inline">Add record</span>
+        <span>Add record</span>
       </ToolbarButton>
 
       {pendingCount > 0 && view === 'data' && (
@@ -247,10 +240,66 @@ export function TableToolbar({
         </>
       )}
 
-      <div className="flex-1 min-w-0" />
+      <ToolbarButton
+        icon={<PanelRight className="h-4 w-4" />}
+        onClick={onToggleInspector}
+        disabled={notData || !canInspect}
+        aria-pressed={inspectorOpen}
+        tooltip="Toggle row details"
+        className={inspectorOpen ? 'bg-accent/10 text-accent' : ''}
+      >
+        Row details
+      </ToolbarButton>
 
-      {view === 'data' && (
-        <>
+      <ToolbarGroup>
+        <ToolbarButton
+          icon={<RefreshCw className={`h-4 w-4 ${isBusy ? 'animate-spin' : ''}`} />}
+          aria-label="Refresh rows"
+          tooltip="Refresh rows (Alt+R)"
+          onClick={onRefresh}
+        />
+        <ToolbarMenu
+          icon={<MoreHorizontal className="h-4 w-4" />}
+          align="right"
+          title="More actions"
+          width={200}
+        >
+          <>
+            <MenuItem onClick={onRefreshSchema}>Refresh schema</MenuItem>
+            <MenuItem onClick={onImportCsv}>Import CSV</MenuItem>
+            <MenuItem onClick={onExport}>Export</MenuItem>
+          </>
+        </ToolbarMenu>
+      </ToolbarGroup>
+    </div>
+  );
+}
+
+interface TableStatusBarProps {
+  currentPage: number;
+  itemsPerPage: number;
+  totalItems: number;
+  countIsEstimate?: boolean;
+  onPageChange: (page: number) => void;
+  onItemsPerPageChange: (size: number) => void;
+
+  durationMs?: number | null;
+  isBusy?: boolean;
+  table: string;
+  selectedRow?: number;
+}
+
+export function TableStatusBar({ currentPage, itemsPerPage, totalItems, countIsEstimate, onPageChange, onItemsPerPageChange, durationMs, isBusy, table, selectedRow }: TableStatusBarProps) {
+  const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
+  const first = totalItems === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1;
+  const last = Math.min(currentPage * itemsPerPage, totalItems);
+  const total = countIsEstimate ? `~${totalItems.toLocaleString()}` : totalItems.toLocaleString();
+  return (
+    <div className="flex min-h-10 shrink-0 flex-wrap items-center gap-3 border-t border-border px-3 py-1 text-xs text-muted">
+      <span className="max-w-44 truncate font-mono text-secondary" title={table}>{table}</span>
+      <span className="tabular-nums">{total} rows</span>
+      {selectedRow != null && <span className="text-accent">Row {selectedRow} selected</span>}
+      <div className="flex-1" />
           <span className="w-14 text-right text-xs text-muted tabular-nums shrink-0">
             {durationMs == null
               ? ''
@@ -297,29 +346,6 @@ export function TableToolbar({
               className="h-7 px-1.5 border-0"
             />
           </ToolbarGroup>
-        </>
-      )}
-
-      <ToolbarGroup>
-        <ToolbarButton
-          icon={<RefreshCw className={`h-4 w-4 ${isBusy ? 'animate-spin' : ''}`} />}
-          aria-label="Refresh rows"
-          tooltip="Refresh rows (Alt+R)"
-          onClick={onRefresh}
-        />
-        <ToolbarMenu
-          icon={<MoreHorizontal className="h-4 w-4" />}
-          align="right"
-          title="More actions"
-          width={200}
-        >
-          <>
-            <MenuItem onClick={onRefreshSchema}>Refresh schema</MenuItem>
-            <MenuItem onClick={onImportCsv}>Import CSV</MenuItem>
-            <MenuItem onClick={onExport}>Export</MenuItem>
-          </>
-        </ToolbarMenu>
-      </ToolbarGroup>
     </div>
   );
 }

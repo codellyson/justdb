@@ -116,6 +116,8 @@ export interface QueryResultGridProps {
   filters?: Filter[];
   onAddFilter?: (filter: Filter) => void;
   onRemoveFilter?: (column: string) => void;
+  /** Follow the active grid cell into a row inspector. */
+  onInspectRow?: (selection: { row: Record<string, any>; index: number } | null) => void;
   /** Vertical max-height for the scroll container. The default lands the
    *  grid below the table-browse chrome; the SQL editor needs more space
    *  reserved above for the SQL query card. Ignored when `fillParent` is set. */
@@ -132,6 +134,8 @@ export interface QueryResultGridProps {
 export interface QueryResultGridHandle {
   /** Stage a new draft row at the top and bring it into view. */
   addRecord: () => void;
+  clearActiveCell: () => void;
+  inspectFirstRow: () => void;
 }
 
 // ─── External stores ─────────────────────────────────────────────────────
@@ -293,6 +297,10 @@ function useIsRowExpanded(store: RowIndexStore, rowIndex: number): boolean {
   return useSyncExternalStore(store.subscribe, () => store.get() === rowIndex);
 }
 
+function useIsActiveRow(store: CellAddrStore, rowIndex: number): boolean {
+  return useSyncExternalStore(store.subscribe, () => store.get()?.rowIndex === rowIndex);
+}
+
 function useIsRowSelected(store: RowKeySetStore, key: string | null): boolean {
   return useSyncExternalStore(store.subscribe, () => (key ? store.get().has(key) : false));
 }
@@ -380,6 +388,7 @@ export const QueryResultGrid = forwardRef<QueryResultGridHandle, QueryResultGrid
     filters,
     onAddFilter,
     onRemoveFilter,
+    onInspectRow,
     maxHeightCss,
     fillParent,
     onBulkExport,
@@ -592,6 +601,22 @@ export const QueryResultGrid = forwardRef<QueryResultGridHandle, QueryResultGrid
     (virtualIndex: number) => filteredData[virtualIndex - draftCount],
     [filteredData, draftCount],
   );
+
+  useEffect(() => {
+    if (!onInspectRow) return;
+    const syncInspector = () => {
+      const selected = stores.selection.get();
+      const index = selected ? selected.rowIndex - draftCount : -1;
+      const row = filteredData[index];
+      onInspectRow(row ? { row, index } : null);
+    };
+    syncInspector();
+    return stores.selection.subscribe(syncInspector);
+  }, [stores, filteredData, draftCount, onInspectRow]);
+
+  useEffect(() => {
+    stores.selection.set(null);
+  }, [stores, layoutKey, offset, filteredData]);
 
   const handleCellSave = useCallback(
     (rowIndex: number, col: string, originalValue: any, nextValue: any, intent?: SaveIntent) => {
@@ -1156,13 +1181,20 @@ export const QueryResultGrid = forwardRef<QueryResultGridHandle, QueryResultGrid
   useImperativeHandle(
     ref,
     () => ({
+      clearActiveCell: () => stores.selection.set(null),
+      inspectFirstRow: () => {
+        if (filteredData.length && displayColumns.length) {
+          stores.selection.set({ rowIndex: draftCount, col: displayColumns[0] });
+          rowVirtualizer.scrollToIndex(draftCount, { align: 'start' });
+        }
+      },
       addRecord: () => {
         if (!schema || !table) return;
         stageInsert({ schema, table });
         rowVirtualizer.scrollToIndex(0, { align: 'start' });
       },
     }),
-    [schema, table, stageInsert, rowVirtualizer],
+    [schema, table, stageInsert, rowVirtualizer, stores, filteredData.length, displayColumns, draftCount],
   );
 
   // Right-click on the blank area below the rows. Row and cell handlers own
@@ -1226,17 +1258,17 @@ export const QueryResultGrid = forwardRef<QueryResultGridHandle, QueryResultGrid
 
   return (
     <StoresContext.Provider value={stores}>
-      <div className="h-0.5 overflow-hidden shrink-0">
-        {isRefreshing && (
-          <div className="h-full w-1/3 rounded-full bg-accent animate-indeterminate" />
-        )}
-      </div>
       <div className={`relative flex flex-col min-h-0${fillParent ? ' flex-1' : ''}`}>
+      {isRefreshing && (
+        <div className="pointer-events-none absolute inset-x-0 top-0 z-40 h-0.5 overflow-hidden" aria-hidden="true">
+          <div className="h-full w-1/3 rounded-full bg-accent animate-indeterminate" />
+        </div>
+      )}
       <div
         ref={scrollContainerRef}
         onContextMenu={onCanvasContext}
         onMouseLeave={() => stores.hovered.set(null)}
-        className={`border border-border rounded-md overflow-auto relative bg-bg${
+        className={`${onInspectRow ? '' : 'border border-border rounded-md '}overflow-auto relative bg-bg${
           fillParent ? ' flex-1 min-h-0' : ''
         }`}
         style={{
@@ -1629,8 +1661,9 @@ const Row = memo(function Row(props: RowProps) {
     measureRef,
   } = props;
 
-  const { expanded, selectedRows } = useStores();
+  const { expanded, selectedRows, selection } = useStores();
   const isExpanded = useIsRowExpanded(expanded, rowIndex);
+  const isActive = useIsActiveRow(selection, rowIndex);
   const rowKey = canEdit ? rowKeyFromPks(getRowPks(row)) : null;
   const isSelected = useIsRowSelected(selectedRows, rowKey);
   const isStagedDelete = rowKey && tablePending?.deletes[rowKey] ? true : false;
@@ -1653,6 +1686,8 @@ const Row = memo(function Row(props: RowProps) {
         className={`flex border-b border-border ${
           isStagedDelete
             ? 'bg-danger/20 line-through text-secondary'
+            : isActive
+              ? 'bg-accent/12 border-l-2 border-l-accent'
             : isSelected
               ? 'bg-accent/15'
               : rowIndex % 2 === 1
