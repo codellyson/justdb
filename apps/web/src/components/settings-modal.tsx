@@ -381,31 +381,20 @@ const AiSection: React.FC<{ docked: boolean }> = ({ docked }) => {
 // ─── Appearance ─────────────────────────────────────────────────────────────
 
 const AppearanceSection: React.FC = () => {
-  const { mode, toggleMode, themeId, setThemeId, themes } = useTheme();
+  const { appearance, setAppearance } = useTheme();
   return (
     <div className="space-y-4">
-      <div className="space-y-1.5">
-        <label className="block text-xs font-medium text-secondary">Mode</label>
-        <div className="inline-flex border border-border rounded-md overflow-hidden">
-          {(['light', 'dark'] as const).map((m) => (
-            <button
-              key={m}
-              onClick={() => { if (mode !== m) toggleMode(); }}
-              className={`px-3 py-1.5 text-sm capitalize transition-colors ${
-                mode === m ? 'bg-accent text-white' : 'text-secondary hover:bg-bg-secondary'
-              }`}
-            >
-              {m}
-            </button>
-          ))}
-        </div>
+      <p className="text-sm text-secondary">White in light mode. Matte black in dark mode.</p>
+      <div role="group" aria-label="Appearance mode" className="inline-flex border border-border rounded-md overflow-hidden">
+        {(['system', 'light', 'dark'] as const).map(value => (
+          <button key={value} type="button" aria-pressed={appearance === value}
+            onClick={() => setAppearance(value)}
+            className={`px-4 py-2 text-sm capitalize transition-colors ${appearance === value ? 'bg-accent text-[rgb(var(--accent-text))]' : 'text-secondary hover:bg-bg-secondary'}`}>
+            {value}
+          </button>
+        ))}
       </div>
-      <div className="space-y-1.5">
-        <label className="block text-xs font-medium text-secondary">Theme</label>
-        <Select value={themeId} onChange={(v) => setThemeId(v)}>
-          {themes.map((t) => <option key={t.id} value={t.id}>{t.label}</option>)}
-        </Select>
-      </div>
+      <p className="text-xs text-muted">System follows your device’s appearance automatically.</p>
     </div>
   );
 };

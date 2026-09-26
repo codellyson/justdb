@@ -98,7 +98,7 @@ export function UpdatePrompt() {
             </button>
             <button
               onClick={runUpdate}
-              className="px-3 py-1 text-xs font-medium text-white bg-accent hover:bg-accent-hover rounded-sm"
+              className="px-3 py-1 text-xs font-medium text-[rgb(var(--accent-text))] bg-accent hover:bg-accent-hover rounded-sm"
             >
               Update now
             </button>

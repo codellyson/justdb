@@ -212,7 +212,7 @@ export const ColumnFilterPopover: React.FC<ColumnFilterPopoverProps> = ({
           <button
             type="button"
             onClick={handleApply}
-            className="px-2.5 py-1 text-[11px] font-medium text-white bg-accent hover:bg-accent-hover rounded-sm transition-colors"
+            className="px-2.5 py-1 text-[11px] font-medium text-[rgb(var(--accent-text))] bg-accent hover:bg-accent-hover rounded-sm transition-colors"
           >
             Apply
           </button>

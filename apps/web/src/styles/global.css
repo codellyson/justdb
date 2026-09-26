@@ -84,3 +84,16 @@ html {
   box-shadow: none;
   border-radius: 0;
 }
+
+/* One continuous rail between the tabs and table header. */
+.table-toolbar-rail { gap:0; min-height:44px; }
+.table-toolbar-rail > div { border-radius:0; align-self:stretch; height:auto; min-height:44px; gap:0; padding:0; }
+.table-toolbar-rail > button,
+.table-toolbar-rail > div > button { height:auto; min-height:44px; border-radius:0; border-width:0 1px 0 0; border-color:rgb(var(--border)); box-shadow:none; }
+.table-toolbar-rail > div[role="group"],
+.table-toolbar-rail > div[role="radiogroup"] { border-right:1px solid rgb(var(--border)); background:transparent; }
+.table-toolbar-rail [role="radio"] { border-radius:0; min-height:44px; }
+.table-toolbar-rail > form { align-self:stretch; min-height:44px; }
+.table-toolbar-rail .where-filter-field { height:100%; min-height:44px; border-radius:0; border-width:0 1px 0 0; }
+.table-toolbar-rail .where-filter-field:focus-within { box-shadow:inset 0 -2px 0 rgb(var(--accent)); }
+.table-toolbar-rail button:focus-visible { outline-offset:-3px; }

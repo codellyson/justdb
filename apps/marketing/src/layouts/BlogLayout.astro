@@ -1,0 +1,78 @@
+---
+import Nav from '../components/Nav.astro';
+import PageScripts from '../components/PageScripts.astro';
+import Layout from './Layout.astro';
+import { SITE_URL, ORG_NAME, ORG_URL, RELEASES_URL, REPO_URL } from '../lib/site';
+import { organizationJsonLd, websiteJsonLd, breadcrumbJsonLd } from '../lib/seo';
+const { title, description, article = false, published, headline } = Astro.props;
+const url = new URL(Astro.url.pathname, SITE_URL).toString();
+const image = `${SITE_URL}/features/record-social-1200.webp`;
+const jsonLd = [organizationJsonLd, websiteJsonLd, breadcrumbJsonLd([
+  { name: 'JustDB', path: '/' }, { name: 'Blog', path: '/blog/' },
+  ...(article ? [{ name: headline ?? title, path: Astro.url.pathname }] : []),
+]), article ? {
+  '@context': 'https://schema.org', '@type': 'BlogPosting',
+  headline: headline ?? title, description, url, mainEntityOfPage: url,
+  image: [image], datePublished: published,
+  author: { '@type': 'Organization', name: ORG_NAME, url: ORG_URL },
+  publisher: { '@id': `${SITE_URL}/#organization` },
+  isPartOf: { '@id': `${SITE_URL}/blog/#blog` },
+} : {
+  '@context': 'https://schema.org', '@type': 'Blog', '@id': `${SITE_URL}/blog/#blog`,
+  name: 'JustDB Blog', description, url, publisher: { '@id': `${SITE_URL}/#organization` },
+}];
+---
+<Layout title={title} description={description} ogType={article ? 'article' : 'website'} ogImage={image} ogImageAlt="JustDB’s table grid and record inspector" jsonLd={jsonLd}>
+  <div class="journal">
+    <Nav />
+    <main><slot /></main>
+    <footer><a href="/">JustDB</a><span>Just your data, no bullshit.</span><div><a href={REPO_URL}>GitHub ↗</a></div></footer>
+  </div>
+  <PageScripts />
+</Layout>
+<style is:global>
+  .journal { background:rgb(var(--bg)); color:rgb(var(--text-primary)); min-height:100vh;  }
+  .journal * { box-sizing:border-box; }
+  .journal header { border-bottom:1px solid rgb(var(--border)); }
+  .journal .journal-nav,.journal main,.journal footer { max-width:1248px; margin:auto; padding-inline:24px; }
+  .journal .journal-nav { height:64px; display:flex; align-items:center; gap:40px; }
+  .journal .brand { display:flex; gap:12px; align-items:center; font-size:18px; }
+  .journal .links { display:flex; gap:24px; font-size:13px; color:rgb(var(--text-secondary)); }
+  .journal a[aria-current] { color:rgb(var(--text-primary)); }
+  .journal .download { margin-left:auto; background:#fafafa; color:#121212; border-radius:6px; padding:9px 14px; font-size:13px; }
+  .journal a:focus-visible { outline:2px solid rgb(var(--text-primary)); outline-offset:5px; }
+  .journal a:hover { text-decoration:underline; text-underline-offset:4px; }
+  .journal main { min-height:70vh; }
+  .journal .eyebrow,.journal .meta { font-family:Menlo,monospace; font-size:11px; letter-spacing:.06em; color:rgb(var(--text-muted)); }
+  .journal h1 { font-size:clamp(40px,6vw,64px); font-weight:400; line-height:1.1; }
+  .journal .intro { padding-block:80px 48px; }
+  .journal .intro h1 { margin-top:20px; }
+  .journal .intro>p:last-child { color:rgb(var(--text-secondary)); max-width:570px; font-size:17px; line-height:1.7; margin-top:22px; }
+  .journal .featured { display:grid; grid-template-columns:1.3fr 1fr; border:1px solid rgb(var(--border)); border-radius:8px; overflow:hidden; background:rgb(var(--bg-secondary)); }
+  .journal .shot { display:block; position:relative; aspect-ratio:1.44; overflow:hidden; background:rgb(var(--bg-elevated)); }
+  .journal .shot img { width:100%; height:auto; filter:grayscale(1); }
+  .journal .featured-copy { padding:40px; align-self:center; }
+  .journal .featured h2 { font-size:32px; line-height:1.2; font-weight:400; margin:20px 0 16px; }
+  .journal .featured-copy p:not(.meta) { font-size:15px; color:rgb(var(--text-secondary)); line-height:1.7; }
+  .journal .read { display:inline-block; margin-top:28px; font-size:14px; }
+  .journal .resources { margin-block:64px 96px; padding-top:32px; border-top:1px solid rgb(var(--border)); display:flex; align-items:center; justify-content:space-between; gap:24px; }
+  .journal .resources h2 { font-size:24px; font-weight:400; margin-bottom:8px; }
+  .journal .resources p { color:rgb(var(--text-secondary)); font-size:14px; }
+  .journal .resources>a { flex-shrink:0; border:1px solid #454545; padding:10px 16px; border-radius:6px; font-size:14px; }
+  .journal footer { border-top:1px solid rgb(var(--border)); padding-block:32px; display:flex; gap:24px; align-items:center; font-size:13px; }
+  .journal footer span { color:rgb(var(--text-muted)); }.journal footer div { margin-left:auto; display:flex; gap:24px; }
+  .journal .post { max-width:760px; margin:auto; padding-block:48px 80px; }
+  .journal .back { color:rgb(var(--text-secondary)); font-size:13px; }
+  .journal .post .meta { margin-top:48px; }
+  .journal .post h1 { margin-block:20px 28px; font-size:clamp(36px,5vw,52px); }
+  .journal .post .lead { font-size:20px; line-height:1.6; color:rgb(var(--text-secondary)); }
+  .journal .post figure { margin:40px 0; border:1px solid rgb(var(--border)); border-radius:8px; overflow:hidden; }
+  .journal .post figcaption { padding:14px 18px; color:rgb(var(--text-muted)); font-size:12px; }
+  .journal .post h2 { font-size:26px; font-weight:400; margin:36px 0 16px; }
+  .journal .post p,.journal .post li { font-size:16px; line-height:1.8; color:rgb(var(--text-secondary)); }
+  .journal .post p + p { margin-top:16px; }
+  .journal .post ol { padding-left:24px; list-style:decimal; }.journal .post li { margin-bottom:8px; }
+  .journal .post .end { border-top:1px solid rgb(var(--border)); margin-top:40px; padding-top:24px; }
+  @media(max-width:760px) { .journal .featured { grid-template-columns:1fr; }.journal .featured-copy { padding:28px; }.journal .journal-nav { gap:20px; }.journal .links { gap:16px; }.journal .links a:first-child { display:none; }.journal .intro { padding-top:56px; }.journal .resources { align-items:flex-start; flex-direction:column; }.journal footer { flex-wrap:wrap; }.journal footer span { display:none; } }
+  @media(max-width:420px) { .journal .journal-nav,.journal main,.journal footer { padding-inline:16px; }.journal .journal-nav { gap:14px; }.journal .links a:first-child,.journal .links a:nth-child(2) { display:none; }.journal .download { font-size:12px; padding:8px 10px; } }
+</style>

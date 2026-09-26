@@ -63,7 +63,7 @@ export const AiSqlBar: React.FC<AiSqlBarProps> = ({ dialect, schema, onGenerated
         <span className="text-muted flex-1 min-w-0">Generate SQL from plain English — add an API key to enable it.</span>
         <button
           onClick={openSettings}
-          className="px-3 py-1.5 text-sm rounded-sm bg-accent text-white hover:bg-accent-hover transition-colors flex-shrink-0"
+          className="px-3 py-1.5 text-sm rounded-sm bg-accent text-[rgb(var(--accent-text))] hover:bg-accent-hover transition-colors flex-shrink-0"
         >
           Set up AI
         </button>
@@ -97,7 +97,7 @@ export const AiSqlBar: React.FC<AiSqlBarProps> = ({ dialect, schema, onGenerated
         <button
           onClick={generate}
           disabled={disabled || isBusy || !prompt.trim()}
-          className="px-3 py-1.5 text-sm rounded-md bg-accent text-white hover:bg-accent-hover disabled:opacity-40 transition-colors flex-shrink-0 flex items-center gap-1.5"
+          className="px-3 py-1.5 text-sm rounded-md bg-accent text-[rgb(var(--accent-text))] hover:bg-accent-hover disabled:opacity-40 transition-colors flex-shrink-0 flex items-center gap-1.5"
         >
           {isBusy ? (
             <Loader2 className="animate-spin h-3.5 w-3.5" />

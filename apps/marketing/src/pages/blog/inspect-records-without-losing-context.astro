@@ -1,0 +1,24 @@
+---
+import BlogLayout from '../../layouts/BlogLayout.astro';
+---
+<BlogLayout title="Inspect a record without losing your place — JustDB Blog" description="Use JustDB’s table grid and row details panel together to inspect records without losing context." article headline="Inspect a record without losing your place." published="2026-09-26">
+  <article class="post">
+    <a class="back" href="/blog">← All articles</a>
+    <p class="meta">WORKFLOW · 3 MIN READ</p>
+    <p class="byline">By <a href="https://kreativekorna.com">KreativeKorna Concepts</a> · <time datetime="2026-09-26">September 26, 2026</time></p>
+    <h1>Inspect a record without losing your place.</h1>
+    <p class="lead">A grid is useful for comparing records. When you need to read one record closely, a field-by-field view makes the work easier.</p>
+    <figure><div class="shot"><img src="/features/record-inspector-1200.webp" srcset="/features/record-inspector-600.webp 600w, /features/record-inspector-1200.webp 1200w, /features/record-inspector-1800.webp 1800w" sizes="(max-width: 760px) calc(100vw - 48px), 760px" width="1800" height="1250" alt="The users table and its row inspector, showing a sample record for Ada Lovelace." /></div><figcaption>A sample users table, with the selected record open alongside it.</figcaption></figure>
+    <h2>Keep the table in view</h2>
+    <p>In JustDB, the row details panel sits beside the data grid. Select a cell and the panel shows the fields for that record. The surrounding rows remain visible, so you can move between the broader table and an individual value without opening another window.</p>
+    <p>The screenshot shows a sample users table. The selected record has a name, email, active flag, biography, avatar, and creation time. The grid makes it easy to compare those values across users; the panel gives each field its own space.</p>
+    <h2>A simple inspection workflow</h2>
+    <ol><li>Open a table from the sidebar and use the grid to find the record you want.</li><li>Choose <strong>Row details</strong> in the toolbar, then select a cell in that record.</li><li>Read the fields in the side panel. Select a different record to update the details without leaving the table.</li><li>Close the panel when you want the full width of the grid again.</li></ol>
+    <h2>Distinguish an empty value from NULL</h2>
+    <p>A missing value can mean something different from an empty string or a zero. JustDB displays NULL explicitly, as shown in the sample avatar field. Check that distinction when investigating incomplete records or unexpected query results.</p>
+    <h2>Inspect first, edit deliberately</h2>
+    <p>Use the panel to understand the record before making a change. To edit, double-click the relevant cell in the grid. Review your staged changes before applying them to the database.</p>
+    <p>Keeping inspection and editing close together makes it easier to check the record you are changing, while the surrounding table provides context.</p>
+    <p class="end">More practical workflows are available in the <a href="/blog"><u>JustDB blog</u></a>.</p>
+  </article>
+</BlogLayout>

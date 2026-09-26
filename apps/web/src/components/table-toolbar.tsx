@@ -99,7 +99,7 @@ export function TableToolbar({
   const notData = view !== 'data';
 
   return (
-    <div className="flex items-center gap-2 min-h-12 px-3 py-1.5 flex-wrap shrink-0 border-b border-border">
+    <div className="table-toolbar-rail flex items-stretch flex-wrap shrink-0 border-b border-border bg-bg">
       <SegmentedControl
         value={view}
         onChange={onViewChange}

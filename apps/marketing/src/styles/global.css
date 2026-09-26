@@ -2,28 +2,21 @@
 @tailwind components;
 @tailwind utilities;
 
-/*
- * Dark-only, mirroring @codellyson/justui's tokens.css. The desktop app ships
- * no light theme, so neither does the marketing site — a light landing page
- * followed by a dark app is a jarring handoff.
- */
+/* Shared matte-black and white appearance across marketing pages. */
 :root {
-  --bg: 22 20 18;
-  --bg-secondary: 37 33 30;
-  --bg-elevated: 45 40 36;
-  --border: 56 50 45;
-  --border-strong: 74 66 59;
-  --text-primary: 232 222 210;
-  --text-secondary: 178 167 152;
-  --text-muted: 124 114 102;
-  --accent: 168 180 220;
-  --accent-hover: 195 205 235;
-  --accent-text: 22 20 18;
-  --danger: 220 105 95;
-  --success: 165 195 130;
-  --warning: 230 195 115;
+  --bg:18 18 18; --bg-secondary:23 23 23; --bg-elevated:31 31 31;
+  --border:46 46 46; --border-strong:70 70 70;
+  --text-primary:250 250 250; --text-secondary:180 180 180; --text-muted:145 145 145;
+  --accent:250 250 250; --accent-hover:215 215 215; --accent-text:18 18 18;
+  --danger:220 105 95; --success:165 195 130; --warning:230 195 115;
 }
-
+:root[data-theme="light"] {
+  --bg:255 255 255; --bg-secondary:249 249 249; --bg-elevated:241 241 241;
+  --border:222 222 222; --border-strong:190 190 190;
+  --text-primary:18 18 18; --text-secondary:85 85 85; --text-muted:105 105 105;
+  --accent:18 18 18; --accent-hover:50 50 50; --accent-text:250 250 250;
+  color-scheme:light;
+}
 @layer base {
   body {
     @apply bg-bg text-primary font-sans antialiased;

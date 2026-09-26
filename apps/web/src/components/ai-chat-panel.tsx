@@ -501,7 +501,7 @@ export const AiChatPanel: React.FC<AiChatPanelProps> = ({ onClose }) => {
             <div
               className={
                 m.role === 'user'
-                  ? 'max-w-[85%] px-3 py-2 rounded-lg bg-accent text-white text-sm whitespace-pre-wrap break-words'
+                  ? 'max-w-[85%] px-3 py-2 rounded-lg bg-accent text-[rgb(var(--accent-text))] text-sm whitespace-pre-wrap break-words'
                   : 'w-full text-sm text-primary'
               }
             >

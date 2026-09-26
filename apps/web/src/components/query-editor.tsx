@@ -721,7 +721,7 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({
                   <button
                     onClick={handleFixWithAi}
                     disabled={isFixing}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md bg-accent text-white hover:bg-accent-hover disabled:opacity-50 transition-colors"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md bg-accent text-[rgb(var(--accent-text))] hover:bg-accent-hover disabled:opacity-50 transition-colors"
                   >
                     <Sparkles className="w-3.5 h-3.5" />
                     {isFixing ? 'Fixing…' : 'Fix with AI'}
@@ -760,7 +760,7 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({
                     <button
                       onClick={handleInterpretPlan}
                       disabled={isInterpreting}
-                      className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-md bg-accent text-white hover:bg-accent-hover disabled:opacity-50 transition-colors"
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-md bg-accent text-[rgb(var(--accent-text))] hover:bg-accent-hover disabled:opacity-50 transition-colors"
                     >
                       <Sparkles className="w-3 h-3" />
                       {isInterpreting ? 'Interpreting…' : 'Interpret with AI'}

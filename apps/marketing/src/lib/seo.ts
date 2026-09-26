@@ -62,7 +62,7 @@ export function softwareApplicationJsonLd(opts: { softwareVersion?: string } = {
     url: SITE_URL,
     downloadUrl: RELEASES_URL,
     softwareHelp: `${REPO_URL}#readme`,
-    screenshot: `${SITE_URL}/justdb-shot.png`,
+    screenshot: `${SITE_URL}/features/row-details.png`,
     ...(opts.softwareVersion ? { softwareVersion: opts.softwareVersion } : {}),
     featureList: [
       'Browse tables, views, columns, indexes and foreign keys',
