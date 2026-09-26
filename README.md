@@ -7,6 +7,18 @@ queries, inspect schemas. Credentials stay on your machine.
 - Changelog: <https://justdb.kreativekorna.com/changelog>
 - Downloads: <https://github.com/codellyson/justdb/releases>
 
+## Install with Homebrew (macOS)
+
+```sh
+brew install --cask codellyson/tap/justdb
+```
+
+Works on Apple silicon and Intel Macs. To update, run `brew update` followed by
+`brew upgrade --cask justdb`.
+
+The [Homebrew tap](https://github.com/codellyson/homebrew-tap) checks published
+stable releases hourly and updates the cask after verifying the installer checksum.
+
 ## Workspaces
 
 | Path | What it is |
