@@ -52,7 +52,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, d
       <nav
         aria-label="Settings sections"
         className={docked
-          ? 'grid shrink-0 grid-cols-3 gap-1 border-b border-border p-3'
+          ? 'settings-nav-grid grid shrink-0 grid-cols-3 gap-2 border-b border-border p-3'
           : 'flex w-36 shrink-0 flex-col gap-0.5 border-r border-border pr-5 py-4'}
       >
         {TABS.map((t) => (

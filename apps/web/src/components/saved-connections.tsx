@@ -6,7 +6,7 @@ import { useToast } from '../contexts/toast-context';
 import { Button } from './ui/button';
 import { ConfirmDialog } from './ui/confirm-dialog';
 import { describeConnection } from '@/lib/connection-url';
-import { ConnectorLogo, type ConnectorKind } from './connector-logo';
+import { ConnectorBadge, type ConnectorKind } from './connector-logo';
 
 export const SavedConnections: React.FC = () => {
   const { savedConnections, currentConnectionId, connectToSaved, deleteConnection, isConnecting } = useConnection();
@@ -39,9 +39,9 @@ export const SavedConnections: React.FC = () => {
   return (
     <section aria-labelledby="saved-connections-title" className="connection-card overflow-hidden rounded-xl border border-border bg-bg">
       <div className="flex min-h-16 flex-wrap items-center justify-between gap-3 px-5 py-3">
-        <div className="flex items-center gap-2">
+        <div className="flex items-baseline gap-2">
           <h2 id="saved-connections-title" className="text-sm font-semibold text-primary">Saved connections</h2>
-          <span className="rounded-full bg-bg px-2 py-0.5 text-xs text-secondary">{savedConnections.length}</span>
+          <span className="text-sm leading-5 tabular-nums text-secondary">{savedConnections.length}</span>
         </div>
         {savedConnections.length > 0 && <label className="relative block w-full sm:w-44">
           <Search aria-hidden="true" className="absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted" strokeWidth={1.5} />
@@ -60,12 +60,9 @@ export const SavedConnections: React.FC = () => {
           const isD1 = connection.config.type === 'sqlite' && connection.config.filepath?.startsWith('d1://');
           const isSqlite = connection.config.type === 'sqlite' && !isD1;
           const kind: ConnectorKind = isD1 ? 'd1' : isSqlite ? 'sqlite' : 'postgresql';
-          const kindLabel = isD1 ? 'Cloudflare D1' : isSqlite ? 'SQLite' : 'PostgreSQL';
           return (
             <div key={connection.id} className="connection-row flex min-h-16 items-center gap-3 border-b border-border px-5 py-2.5 last:border-b-0 hover:bg-bg-secondary">
-              <span aria-label={kindLabel} className={`flex size-9 shrink-0 items-center justify-center rounded-lg ${isD1 ? 'bg-amber-500/15' : isSqlite ? 'bg-emerald-500/15' : 'bg-accent/15'}`}>
-                <ConnectorLogo kind={kind} className="size-6" />
-              </span>
+              <ConnectorBadge kind={kind} />
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
                   <p className="truncate text-sm font-medium text-primary" title={connection.name}>{connection.name}</p>

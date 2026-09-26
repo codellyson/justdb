@@ -98,6 +98,28 @@ html {
   -webkit-line-clamp: unset;
 }
 
+.settings-nav-grid > button { position: relative; }
+.settings-nav-grid > button:not(:nth-child(3n))::after {
+  content: '';
+  position: absolute;
+  right: -4px;
+  top: 8px;
+  bottom: 8px;
+  width: 1px;
+  background: rgb(var(--border));
+  pointer-events: none;
+}
+.settings-nav-grid > button:nth-child(-n + 3)::before {
+  content: '';
+  position: absolute;
+  left: 4px;
+  right: 4px;
+  bottom: -4px;
+  height: 1px;
+  background: rgb(var(--border));
+  pointer-events: none;
+}
+
 .settings-field {
   display: grid;
   grid-template-columns: 92px minmax(0, 1fr);
