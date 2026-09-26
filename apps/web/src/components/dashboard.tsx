@@ -1,5 +1,5 @@
 
-import { useState, useMemo, useRef, useEffect } from "react";
+import { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import { Navigate } from "react-router-dom";
 import { Header } from "./header";
 import { Sidebar } from "./sidebar";
@@ -31,7 +31,8 @@ import { TableCreationWizard } from "./table-creation-wizard";
 import { BatchExportModal } from "./batch-export-modal";
 import { TabBar } from "./tab-bar";
 import { QueryEditor } from "./query-editor";
-import { TableToolbar, type TableView } from "./table-toolbar";
+import { RowInspector } from "./row-inspector";
+import { TableToolbar, TableStatusBar, type TableView } from "./table-toolbar";
 import { AiChatPanel } from "./ai-chat-panel";
 import { Button } from "./ui/button";
 import { useConnection } from "../contexts/connection-context";
@@ -72,6 +73,7 @@ export function Dashboard() {
     visibleColumns,
     tableSearch,
     tableFilters,
+    setTableFilters,
     addTableFilter,
     removeTableFilter,
     clearTableFilters,
@@ -161,6 +163,11 @@ export function Dashboard() {
     try { localStorage.setItem('justdb:sidebar-open', isSidebarOpen ? '1' : '0'); } catch { /* ignore */ }
   }, [isSidebarOpen]);
   const [fkQuery, setFkQuery] = useState<FKQuery | null>(null);
+  const [inspectedRow, setInspectedRow] = useState<{ row: Record<string, any>; index: number } | null>(null);
+  const handleInspectRow = useCallback((selection: { row: Record<string, any>; index: number } | null) => {
+    setInspectedRow(selection);
+  }, []);
+  useEffect(() => { setInspectedRow(null); }, [selectedSchema, selectedTable, currentPage, activeTabId, tableView]);
   const [editorEditableTarget, setEditorEditableTarget] = useState<{ schema: string; table: string } | null>(null);
 
   const reviewTarget: { schema: string; table: string } | null = selectedTable
@@ -524,7 +531,7 @@ export function Dashboard() {
               </>
             }
           />
-          <MainContent>
+          <MainContent compact={!!selectedTable && !isEditorTab && !isQueryTab}>
             {error && (
               <ErrorState
                 message={error}
@@ -596,8 +603,9 @@ export function Dashboard() {
               })()
             ) : selectedTable ? (
               <>
-              <div className="flex-1 flex flex-col min-h-0 gap-2">
+              <div className="flex-1 flex flex-col min-h-0">
                 <TableToolbar
+                  key={`${selectedSchema}.${selectedTable}`}
                   view={tableView}
                   onViewChange={setTableView}
                   columns={columns}
@@ -612,6 +620,10 @@ export function Dashboard() {
                   filters={tableFilters}
                   onRemoveFilter={removeTableFilter}
                   onClearFilters={clearTableFilters}
+                  onApplyFilters={(filters) => {
+                    setTableFilters(filters);
+                    setCurrentPage(1);
+                  }}
                   sortColumn={sortColumn}
                   sortDirection={sortDirection}
                   onSort={handleSort}
@@ -619,16 +631,12 @@ export function Dashboard() {
                     setSortColumn(null);
                     setSortDirection(null);
                   }}
-                  currentPage={currentPage}
-                  itemsPerPage={itemsPerPage}
-                  totalItems={totalItems}
-                  countIsEstimate={countIsEstimate}
-                  onPageChange={setCurrentPage}
-                  onItemsPerPageChange={(size) => {
-                    setItemsPerPage(size);
-                    setCurrentPage(1);
+                  inspectorOpen={!!inspectedRow}
+                  canInspect={tableData.length > 0}
+                  onToggleInspector={() => {
+                    if (inspectedRow) dataTableRef.current?.clearActiveCell();
+                    else dataTableRef.current?.inspectFirstRow();
                   }}
-                  durationMs={queryDurationMs}
                   isBusy={isLoading || isRefreshing}
                   onRefresh={() => refreshTableData()}
                   onRefreshSchema={() => selectedTable && loadTableSchema(selectedTable)}
@@ -646,47 +654,67 @@ export function Dashboard() {
                   onExport={() => setIsExportOpen(true)}
                 />
                 {tableView === 'data' ? (
-                  <QueryResultGrid
-                    ref={dataTableRef}
-                    fillParent
-                    columns={columns}
-                    data={tableData}
-                    isLoading={isLoading}
-                    isRefreshing={isRefreshing}
-                    limit={itemsPerPage}
-                    offset={(currentPage - 1) * itemsPerPage}
-                    onSort={handleSort}
-                    sortColumn={sortColumn || undefined}
-                    sortDirection={sortDirection ?? undefined}
-                    visibleColumns={visibleColumns.length > 0 ? visibleColumns : undefined}
-                    searchQuery={tableSearch}
-                    primaryKeys={primaryKeys}
-                    columnSchema={schema}
-                    schema={selectedSchema}
-                    table={selectedTable}
-                    layoutKey={`${databaseName ?? 'default'}.${selectedSchema}.${selectedTable}`}
-                    onCellUpdate={handleCellUpdate}
-                    onRowDelete={handleRowDelete}
-                    foreignKeys={foreignKeys}
-                    onForeignKeyClick={(args) =>
-                      setFkQuery({
-                        sourceColumn: args.sourceColumn,
-                        fk: args.fk,
-                        value: args.value,
-                      })
-                    }
-                    filters={tableFilters}
-                    onAddFilter={addTableFilter}
-                    onRemoveFilter={removeTableFilter}
-                    onBulkExport={(rows) => {
-                      setBulkExportRows(rows);
-                      setIsExportOpen(true);
-                    }}
-                    columnTypes={columnTypes}
-                    activeFormatters={allFormatters}
-                  />
+                  <div className="flex flex-1 min-h-0 min-w-0 overflow-hidden">
+                    <div className="flex flex-1 min-h-0 min-w-0 flex-col">
+                      <QueryResultGrid
+                        ref={dataTableRef}
+                        fillParent
+                        columns={columns}
+                        data={tableData}
+                        isLoading={isLoading}
+                        isRefreshing={isRefreshing}
+                        limit={itemsPerPage}
+                        offset={(currentPage - 1) * itemsPerPage}
+                        onSort={handleSort}
+                        sortColumn={sortColumn || undefined}
+                        sortDirection={sortDirection ?? undefined}
+                        visibleColumns={visibleColumns.length > 0 ? visibleColumns : undefined}
+                        searchQuery={tableSearch}
+                        primaryKeys={primaryKeys}
+                        columnSchema={schema}
+                        schema={selectedSchema}
+                        table={selectedTable}
+                        layoutKey={`${databaseName ?? 'default'}.${selectedSchema}.${selectedTable}`}
+                        onCellUpdate={handleCellUpdate}
+                        onRowDelete={handleRowDelete}
+                        foreignKeys={foreignKeys}
+                        onForeignKeyClick={(args) =>
+                          setFkQuery({
+                            sourceColumn: args.sourceColumn,
+                            fk: args.fk,
+                            value: args.value,
+                          })
+                        }
+                        filters={tableFilters}
+                        onAddFilter={addTableFilter}
+                        onRemoveFilter={removeTableFilter}
+                        onBulkExport={(rows) => {
+                          setBulkExportRows(rows);
+                          setIsExportOpen(true);
+                        }}
+                        columnTypes={columnTypes}
+                        activeFormatters={allFormatters}
+                        onInspectRow={handleInspectRow}
+                      />
+                    </div>
+                    {inspectedRow && !fkQuery && !isAiOpen && (
+                      <RowInspector
+                        row={inspectedRow.row}
+                        index={inspectedRow.index}
+                        offset={(currentPage - 1) * itemsPerPage}
+                        columns={columns}
+                        columnTypes={columnTypes}
+                        foreignKeys={foreignKeys}
+                        onForeignKeyClick={(args) => setFkQuery(args)}
+                        onClose={() => {
+                          dataTableRef.current?.clearActiveCell();
+                          setInspectedRow(null);
+                        }}
+                      />
+                    )}
+                  </div>
                 ) : (
-                  <div className="flex-1 min-h-0 overflow-auto space-y-4">
+                  <div className="flex-1 min-h-0 overflow-auto space-y-4 p-4">
                     {!isLoadingSchema && schema.length > 0 && <TableSchema columns={schema} />}
                     <RelationshipDisplay
                       relationships={relationships}
@@ -695,6 +723,23 @@ export function Dashboard() {
                     />
                     <TableStats stats={tableStats} isLoading={isLoadingStats} />
                   </div>
+                )}
+                {tableView === 'data' && (
+                  <TableStatusBar
+                    table={selectedTable}
+                    selectedRow={inspectedRow ? (currentPage - 1) * itemsPerPage + inspectedRow.index + 1 : undefined}
+                    currentPage={currentPage}
+                    itemsPerPage={itemsPerPage}
+                    totalItems={totalItems}
+                    countIsEstimate={countIsEstimate}
+                    onPageChange={setCurrentPage}
+                    onItemsPerPageChange={(size) => {
+                      setItemsPerPage(size);
+                      setCurrentPage(1);
+                    }}
+                    durationMs={queryDurationMs}
+                    isBusy={isLoading || isRefreshing}
+                  />
                 )}
               </div>
               </>

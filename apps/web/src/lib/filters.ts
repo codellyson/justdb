@@ -113,10 +113,12 @@ function escapeLike(value: any): string {
 export function describeFilters(filters: Filter[]): string {
   if (!filters || filters.length === 0) return "";
   const parts = filters.map((f) => {
-    const col = `"${f.column}"`;
+    const col = `"${f.column.replace(/"/g, '""')}"`;
     const v = (x: any) =>
       x === null || x === undefined
         ? "NULL"
+        : typeof x === "boolean"
+          ? (x ? "TRUE" : "FALSE")
         : typeof x === "number"
           ? String(x)
           : `'${String(x).replace(/'/g, "''")}'`;

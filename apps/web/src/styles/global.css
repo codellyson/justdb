@@ -70,6 +70,14 @@ html {
 }
 *:focus:not(:focus-visible) { outline: none; }
 
+/* The compound WHERE field owns the input's focus boundary. Action buttons
+   retain their own keyboard focus indicators. */
+.where-filter-field input:focus-visible {
+  outline: none;
+  box-shadow: none;
+  border-radius: 0;
+}
+
 /* The AI composer provides one focus boundary around its text and controls. */
 .ai-composer textarea:focus-visible {
   outline: none;
