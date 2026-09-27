@@ -40,6 +40,7 @@ interface PendingQueryConfirmation {
   statement: string;
   isBulkWrite: boolean;
   requiresTypedConfirmation: boolean;
+  reason?: string;
 }
 
 // 1k wide rows (16+ varchar cols on a remote DB) hung the webview after
@@ -205,6 +206,7 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({
             statement: c.statement,
             isBulkWrite: c.isBulkWrite,
             requiresTypedConfirmation: c.requiresTypedConfirmation,
+            reason: c.reason,
           });
           return;
         }
@@ -954,6 +956,7 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({
       {pendingQueryConfirm && (
         <QueryExecutionConfirmation
           isOpen={!!pendingQueryConfirm}
+          reason={pendingQueryConfirm.reason}
           sql={pendingQueryConfirm.sql}
           statement={pendingQueryConfirm.statement}
           kind={pendingQueryConfirm.kind}

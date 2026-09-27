@@ -30,7 +30,7 @@ interface ConnectionContextType {
   cancelConnect: () => void;
   disconnect: () => Promise<void>;
   saveConnection: (name: string, config: DBConfig) => void;
-  deleteConnection: (connectionId: string) => void;
+  deleteConnection: (connectionId: string) => Promise<void>;
   error: string | null;
 }
 
@@ -276,10 +276,10 @@ export function ConnectionProvider({ children }: { children: React.ReactNode }) 
       await db.savedDelete(connectionId);
       setSavedConnections(prev => prev.filter(c => c.id !== connectionId));
       if (currentConnectionId === connectionId) {
-        disconnect();
+        await disconnect();
       }
     } catch (e) {
-      console.error('Failed to delete connection:', e);
+      throw new Error(`Could not remove the saved connection: ${e instanceof Error ? e.message : String(e)}`);
     }
   };
 

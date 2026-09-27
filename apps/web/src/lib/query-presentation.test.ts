@@ -16,9 +16,9 @@ describe('query presentation', () => {
     expect(formatQueryDuration(NaN)).toBe('—');
   });
 
-  it('uses spare space for text while keeping numeric columns compact', () => {
+  it('distributes spare space equally regardless of value type', () => {
     expect(fitQueryColumns(['id', 'title'], [{ id: 1, title: 'Motion verification' }], {}, 1000))
-      .toEqual({ id: 88, title: 912 });
+      .toEqual({ id: 500, title: 500 });
   });
 
   it('preserves explicit user widths even when they overflow', () => {

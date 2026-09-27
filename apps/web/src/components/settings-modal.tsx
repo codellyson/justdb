@@ -262,7 +262,7 @@ const AiSection: React.FC = () => {
       setRemoveConfirm(false);
       await refresh();
     } catch (e: any) {
-      setError(e?.message || 'Failed to remove key');
+      throw new Error(e?.message || 'Failed to remove key');
     } finally {
       setBusy(false);
     }
@@ -350,7 +350,7 @@ const AiSection: React.FC = () => {
       )}
       <ConfirmDialog
         isOpen={removeConfirm}
-        onConfirm={() => void remove()}
+        onConfirm={remove}
         onCancel={() => setRemoveConfirm(false)}
         title={isLocal ? 'Disconnect local agent' : 'Remove AI key'}
         message={isLocal

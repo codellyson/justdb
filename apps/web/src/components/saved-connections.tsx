@@ -17,7 +17,6 @@ export const SavedConnections: React.FC = () => {
   const visible = savedConnections.filter((connection) =>
     `${connection.name} ${describeConnection(connection.config)}`.toLowerCase().includes(filter.trim().toLowerCase())
   );
-  const deleting = savedConnections.find((connection) => connection.id === deleteTarget);
 
   const handleConnect = async (connectionId: string) => {
     try {
@@ -29,10 +28,10 @@ export const SavedConnections: React.FC = () => {
     }
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (!deleteTarget) return;
-    deleteConnection(deleteTarget);
-    addToast('Connection deleted', 'info');
+    await deleteConnection(deleteTarget);
+    addToast('Saved connection removed', 'info');
     setDeleteTarget(null);
   };
 
@@ -102,9 +101,9 @@ export const SavedConnections: React.FC = () => {
         isOpen={deleteTarget !== null}
         onConfirm={confirmDelete}
         onCancel={() => setDeleteTarget(null)}
-        title="Delete connection"
-        message={`Delete “${deleting?.name ?? 'this connection'}”? This removes its saved details and cannot be undone.`}
-        confirmText="Delete"
+        title="Remove saved connection?"
+        message={`Remove “${savedConnections.find(c => c.id === deleteTarget)?.name ?? 'this connection'}” from your saved connections? Its saved connection details will be removed. The database and its data will not be deleted.`}
+        confirmText="Remove connection"
         variant="danger"
       />
     </section>

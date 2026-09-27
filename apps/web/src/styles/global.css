@@ -360,3 +360,13 @@ html {
   }
   .app-button:active:not(:disabled):not([data-static]) { scale: 1; }
 }
+
+/* Shared caution and review surfaces use the application's readable scale. */
+.app-modal-overlay { background: rgb(0 0 0 / .38); backdrop-filter: blur(2px); }
+.app-modal [data-radix-dialog-title],
+.app-modal h2 { font-family: inherit; font-size: 18px; line-height: 26px; font-weight: 600; text-transform: none; letter-spacing: normal; color: rgb(var(--text-primary)); white-space: normal; }
+.app-modal > div:first-child { padding: 20px 24px 16px; }
+.app-modal [data-justui="modal-body"] { padding: 20px 24px; }
+.app-modal :is(input, button, select, textarea):focus-visible { outline: 2px solid rgb(var(--accent) / .55); outline-offset: 2px; box-shadow: none; }
+.app-modal input:focus-visible { outline: none; border-color: rgb(var(--accent) / .65); box-shadow: 0 0 0 1px rgb(var(--accent) / .25); }
+.modal-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px; padding-top: 16px; margin-top: 20px; border-top: 1px solid rgb(var(--border)); }

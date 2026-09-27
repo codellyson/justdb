@@ -50,24 +50,10 @@ import { ArrowUpRight, Check, ChevronUp, Copy, Eye, Maximize2, PencilLine, X } f
 
 const ROW_HEIGHT = 36;
 const HEADER_HEIGHT = 40;
-const DEFAULT_COL_WIDTH = 180;
+const DEFAULT_COL_WIDTH = 200;
 const MIN_COL_WIDTH = 60;
 const MAX_COL_WIDTH = 800;
 const CHECKBOX_WIDTH = 28;
-
-function defaultWidthForType(type?: string): number {
-  if (!type) return DEFAULT_COL_WIDTH;
-  const t = type.toLowerCase();
-  if (t.includes('bool')) return 80;
-  if (t === 'integer' || t === 'int' || t === 'smallint' || t === 'bigint' || t.includes('serial')) return 100;
-  if (t === 'numeric' || t === 'decimal' || t === 'real' || t === 'float' || t.includes('double')) return 120;
-  if (t === 'date') return 110;
-  if (t.startsWith('timestamp') || t === 'datetime') return 200;
-  if (t === 'uuid') return 280;
-  if (t === 'json' || t === 'jsonb') return 240;
-  if (t === 'text' || t.includes('varchar') || t.includes('char')) return 200;
-  return DEFAULT_COL_WIDTH;
-}
 
 export interface ForeignKeyTarget {
   schema: string;
@@ -521,13 +507,13 @@ export const QueryResultGrid = forwardRef<QueryResultGridHandle, QueryResultGrid
     return () => observer.disconnect();
   }, [fitColumns, isLoading]);
 
-  // Resolved per-column widths: stored override → default-for-type.
+  // All data columns share one default width; explicit resizing is preserved.
   const resolvedWidths = useMemo(() => {
     if (fitColumns) return fitQueryColumns(displayColumns, data, layout.widths, viewportWidth - (canEdit ? CHECKBOX_WIDTH : 0));
     const w: Record<string, number> = {};
-    for (const c of displayColumns) w[c] = layout.widths[c] ?? defaultWidthForType(columnTypes[c]);
+    for (const c of displayColumns) w[c] = layout.widths[c] ?? DEFAULT_COL_WIDTH;
     return w;
-  }, [displayColumns, layout.widths, columnTypes, fitColumns, data, viewportWidth, canEdit]);
+  }, [displayColumns, layout.widths, fitColumns, data, viewportWidth, canEdit]);
 
   // CSS vars on the container expose each column's width as --cw-<idx>.
   // Cells use width: var(--cw-N), so width changes don't re-render a single

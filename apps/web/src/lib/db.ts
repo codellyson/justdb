@@ -355,6 +355,7 @@ interface RunQueryConfirmation {
     statement: string;
     isBulkWrite: boolean;
     requiresTypedConfirmation: boolean;
+    reason?: string;
   };
 }
 
@@ -386,6 +387,7 @@ async function runQuery(
         statement: classification.statement,
         isBulkWrite: classification.isBulkWrite,
         requiresTypedConfirmation: requiresTypedConfirmation(classification),
+        reason: classification.reason,
       },
     };
   }

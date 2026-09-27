@@ -34,9 +34,32 @@ function normalizeForClassification(sql: string): string {
     }
     if (ch === '/' && next === '*') {
       i += 2;
-      while (i < len - 1 && !(sql[i] === '*' && sql[i + 1] === '/')) i++;
-      i += 2;
+      let depth = 1;
+      while (i < len && depth) {
+        if (sql.slice(i, i + 2) === '/*') { depth++; i += 2; }
+        else if (sql.slice(i, i + 2) === '*/') { depth--; i += 2; }
+        else i++;
+      }
       result += ' ';
+      continue;
+    }
+    if (ch === '$') {
+      const tag = sql.slice(i).match(/^\$(?:[a-zA-Z_][a-zA-Z0-9_]*)?\$/)?.[0];
+      if (tag) {
+        const end = sql.indexOf(tag, i + tag.length);
+        i = end < 0 ? len : end + tag.length;
+        result += "''";
+        continue;
+      }
+    }
+    if (ch === '`' || ch === '[') {
+      const closing = ch === '[' ? ']' : '`';
+      i++;
+      while (i < len) {
+        if (sql[i] === closing && sql[i + 1] === closing) { i += 2; continue; }
+        if (sql[i++] === closing) break;
+      }
+      result += ' quoted_identifier ';
       continue;
     }
     if (ch === "'") {
@@ -51,14 +74,12 @@ function normalizeForClassification(sql: string): string {
     }
     if (ch === '"') {
       i++;
-      let ident = '';
       while (i < len) {
-        if (sql[i] === '"' && sql[i + 1] === '"') { ident += '""'; i += 2; continue; }
+        if (sql[i] === '"' && sql[i + 1] === '"') { i += 2; continue; }
         if (sql[i] === '"') { i++; break; }
-        ident += sql[i];
         i++;
       }
-      result += ' ' + ident + ' ';
+      result += ' quoted_identifier ';
       continue;
     }
 
@@ -69,24 +90,30 @@ function normalizeForClassification(sql: string): string {
   return result.replace(/\s+/g, ' ').trim();
 }
 
-function hasKeyword(normalizedUpper: string, keyword: string): boolean {
-  return new RegExp(`\\b${keyword}\\b`).test(normalizedUpper);
-}
-
 function firstKeyword(normalizedUpper: string): string {
   const match = normalizedUpper.match(/^\s*([A-Z]+)/);
   return match ? match[1] : '';
 }
 
-function isBulkWriteStatement(normalizedUpper: string, statement: string): boolean {
-  if (statement !== 'UPDATE' && statement !== 'DELETE') return false;
-  return !hasKeyword(normalizedUpper, 'WHERE');
+// Only a WHERE belonging to this statement restricts its target rows.
+function hasOuterWhere(sql: string): boolean {
+  let depth = 0;
+  for (const token of sql.match(/\(|\)|[A-Z_]+/g) ?? []) {
+    if (token === '(') depth++;
+    else if (token === ')') { if (depth === 0) break; depth--; }
+    else if (token === 'WHERE' && depth === 0) return true;
+  }
+  return false;
 }
-
-function ctEmbedsWrite(normalizedUpper: string): boolean {
-  if (!normalizedUpper.startsWith('WITH')) return false;
-  return /\b(INSERT|UPDATE|DELETE|MERGE)\b/.test(normalizedUpper);
+function isBulkWriteStatement(sql: string, statement: string): boolean {
+  return ['UPDATE', 'DELETE'].includes(statement) && !hasOuterWhere(sql);
 }
+const INSPECTION_PRAGMAS = new Set([
+  'TABLE_INFO', 'TABLE_XINFO', 'TABLE_LIST', 'INDEX_INFO', 'INDEX_XINFO',
+  'INDEX_LIST', 'FOREIGN_KEY_LIST', 'FOREIGN_KEY_CHECK', 'INTEGRITY_CHECK',
+  'QUICK_CHECK', 'DATABASE_LIST', 'COMPILE_OPTIONS', 'FUNCTION_LIST',
+  'MODULE_LIST', 'PRAGMA_LIST', 'COLLATION_LIST',
+]);
 
 export function classifyQuery(sql: string): QueryClassification {
   const normalized = normalizeForClassification(sql);
@@ -120,16 +147,21 @@ export function classifyQuery(sql: string): QueryClassification {
   }
 
   if (READ_KEYWORDS.has(statement)) {
-    if (statement === 'WITH' && ctEmbedsWrite(upper)) {
-      const innerMatch = upper.match(/\b(INSERT|UPDATE|DELETE|MERGE)\b/);
-      const inner = innerMatch ? innerMatch[1] : 'UPDATE';
-      return {
-        kind: 'write',
-        statement: inner,
-        isBulkWrite: true,
-      };
+    if (statement === 'WITH') {
+      const writes = [...upper.matchAll(/\b(INSERT|UPDATE|DELETE|MERGE|REPLACE)\b/g)].map(match => ({
+        kind: 'write' as const,
+        statement: match[1],
+        isBulkWrite: isBulkWriteStatement(upper.slice(match.index), match[1]),
+      }));
+      if (writes.length) return writes.find(c => c.isBulkWrite) ?? writes[0];
     }
-    if ((statement === 'EXPLAIN' && /\bANALYZE\b/.test(upper) && /\b(INSERT|UPDATE|DELETE|MERGE)\b/.test(upper)) || (statement === 'PRAGMA' && /[=(]/.test(upper))) return { kind: 'write', statement, isBulkWrite: true };
+    if (statement === 'EXPLAIN' && /\bANALYZE\b/.test(upper) && /\b(INSERT|UPDATE|DELETE|MERGE)\b/.test(upper)) {
+      return { kind: 'write', statement, isBulkWrite: false, reason: 'EXPLAIN ANALYZE executes the statement it measures.' };
+    }
+    if (statement === 'PRAGMA') {
+      const name = upper.match(/^PRAGMA\s+(?:\w+\.)?(\w+)/)?.[1] ?? '';
+      if (!INSPECTION_PRAGMAS.has(name)) return { kind: 'write', statement, isBulkWrite: false, reason: 'This PRAGMA may change database settings or state.' };
+    }
     return { kind: 'read', statement, isBulkWrite: false };
   }
 
