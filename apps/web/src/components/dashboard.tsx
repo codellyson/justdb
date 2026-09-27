@@ -35,6 +35,7 @@ import { RowInspector } from "./row-inspector";
 import { TableToolbar, TableStatusBar, type TableView } from "./table-toolbar";
 import { AiChatPanel } from "./ai-chat-panel";
 import { Button } from "./ui/button";
+import { MotionDock } from "./ui/motion-dock";
 import { useConnection } from "../contexts/connection-context";
 import { useDashboard } from "../contexts/dashboard-context";
 import { usePendingChanges } from "../contexts/pending-changes-context";
@@ -531,7 +532,7 @@ export function Dashboard() {
               </>
             }
           />
-          <MainContent compact={!!selectedTable && !isEditorTab && !isQueryTab}>
+          <MainContent transitionKey={`${activeTabId ?? 'empty'}:${tableView}:${isLoading ? 'loading' : 'ready'}`} compact={!!selectedTable && !isEditorTab && !isQueryTab}>
             {error && (
               <ErrorState
                 message={error}
@@ -697,7 +698,8 @@ export function Dashboard() {
                         onInspectRow={handleInspectRow}
                       />
                     </div>
-                    {inspectedRow && !fkQuery && !isAiOpen && (
+                    <MotionDock open={!!inspectedRow && !fkQuery && !isAiOpen} className="row-inspector-dock">
+                    {inspectedRow && (
                       <RowInspector
                         row={inspectedRow.row}
                         index={inspectedRow.index}
@@ -712,6 +714,7 @@ export function Dashboard() {
                         }}
                       />
                     )}
+                    </MotionDock>
                   </div>
                 ) : (
                   <div className="flex-1 min-h-0 overflow-auto space-y-4 p-4">
@@ -760,6 +763,7 @@ export function Dashboard() {
     />
     </div>
     {/* Docked side panels — they share the layout width rather than overlaying. */}
+    <MotionDock open={!!fkQuery}>
     <FKSidePanel
       query={fkQuery}
       onClose={() => setFkQuery(null)}
@@ -770,7 +774,8 @@ export function Dashboard() {
       }}
       onFollow={(next) => setFkQuery(next)}
     />
-    {isAiOpen && <AiChatPanel onClose={() => setIsAiOpen(false)} />}
+    </MotionDock>
+    <MotionDock open={isAiOpen}><AiChatPanel onClose={() => setIsAiOpen(false)} /></MotionDock>
     </div>
     <PendingChangesBar
       onOpenReview={() => setIsReviewOpen(true)}

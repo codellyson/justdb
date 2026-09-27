@@ -1,3 +1,4 @@
+import { providerForConfig, installedProviders } from '@/lib/connector-catalog';
 
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { DBConfig, SavedConnection } from '@/types';
@@ -20,6 +21,7 @@ interface ConnectionContextType {
   isConnected: boolean;
   isConnecting: boolean;
   databaseName?: string;
+  activeConnector?: ReturnType<typeof providerForConfig>;
   databaseType: "postgresql" | "mysql" | "sqlite";
   currentConnectionId?: string;
   savedConnections: SavedConnection[];
@@ -28,7 +30,7 @@ interface ConnectionContextType {
   cancelConnect: () => void;
   disconnect: () => Promise<void>;
   saveConnection: (name: string, config: DBConfig) => void;
-  deleteConnection: (connectionId: string) => void;
+  deleteConnection: (connectionId: string) => Promise<void>;
   error: string | null;
 }
 
@@ -37,6 +39,7 @@ const ConnectionContext = createContext<ConnectionContextType | undefined>(undef
 const CURRENT_CONNECTION_KEY = 'db-current-connection';
 
 export function ConnectionProvider({ children }: { children: React.ReactNode }) {
+  const [activeConnector, setActiveConnector] = useState<ReturnType<typeof providerForConfig>>();
   const [isConnected, setIsConnected] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
   const [databaseName, setDatabaseName] = useState<string | undefined>();
@@ -82,6 +85,11 @@ export function ConnectionProvider({ children }: { children: React.ReactNode }) 
   }, [savedConnections.length]);
 
   const connect = async (config: DBConfig, name?: string) => {
+    const required = providerForConfig(config);
+    if ((required === 'd1' || required === 'turso') && !installedProviders().includes(required)) {
+      const message = `Install ${required === 'd1' ? 'Cloudflare D1' : 'Turso / libSQL'} in Settings → Connectors first.`;
+      setError(message); throw new Error(message);
+    }
     const token = ++connectTokenRef.current;
     setIsConnecting(true);
     setError(null);
@@ -103,6 +111,8 @@ export function ConnectionProvider({ children }: { children: React.ReactNode }) 
       }
 
       setIsConnected(true);
+      const connector = providerForConfig(config);
+      setActiveConnector(connector);
       setDatabaseName(data.database || config.database);
       setDatabaseType((data.type || config.type || 'postgresql') as 'postgresql' | 'mysql' | 'sqlite');
       void track({ name: 'connection_opened', db_type: toDbKind(data.type || config.type), success: true });
@@ -130,6 +140,11 @@ export function ConnectionProvider({ children }: { children: React.ReactNode }) 
       throw new Error('Connection not found');
     }
 
+    const required = providerForConfig(connection.config);
+    if ((required === 'd1' || required === 'turso') && !installedProviders().includes(required)) {
+      const message = `Install ${required === 'd1' ? 'Cloudflare D1' : 'Turso / libSQL'} in Settings → Connectors first.`;
+      setError(message); throw new Error(message);
+    }
     const token = ++connectTokenRef.current;
     setIsConnecting(true);
     setError(null);
@@ -143,6 +158,8 @@ export function ConnectionProvider({ children }: { children: React.ReactNode }) 
       }
 
       setIsConnected(true);
+      const connector = providerForConfig(connection.config);
+      setActiveConnector(connector);
       setDatabaseName(data.database || connection.config.database);
       setDatabaseType((data.type || connection.config.type || 'postgresql') as 'postgresql' | 'mysql' | 'sqlite');
       void track({ name: 'connection_opened', db_type: toDbKind(data.type || connection.config.type), success: true });
@@ -177,6 +194,7 @@ export function ConnectionProvider({ children }: { children: React.ReactNode }) 
       setIsConnected(false);
       setDatabaseName(undefined);
       setDatabaseType("postgresql");
+      setActiveConnector(undefined);
       setCurrentConnectionId(undefined);
       if (typeof window !== 'undefined') {
         localStorage.removeItem(CURRENT_CONNECTION_KEY);
@@ -184,6 +202,7 @@ export function ConnectionProvider({ children }: { children: React.ReactNode }) 
       setError(null);
     } catch (err: any) {
       setError(err.message || 'Disconnect failed');
+      throw err;
     }
   }, []);
 
@@ -257,16 +276,17 @@ export function ConnectionProvider({ children }: { children: React.ReactNode }) 
       await db.savedDelete(connectionId);
       setSavedConnections(prev => prev.filter(c => c.id !== connectionId));
       if (currentConnectionId === connectionId) {
-        disconnect();
+        await disconnect();
       }
     } catch (e) {
-      console.error('Failed to delete connection:', e);
+      throw new Error(`Could not remove the saved connection: ${e instanceof Error ? e.message : String(e)}`);
     }
   };
 
   return (
     <ConnectionContext.Provider
       value={{
+        activeConnector,
         isConnected,
         isConnecting,
         databaseName,

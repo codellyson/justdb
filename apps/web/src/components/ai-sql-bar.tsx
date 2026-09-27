@@ -74,7 +74,7 @@ export const AiSqlBar: React.FC<AiSqlBarProps> = ({ dialect, schema, onGenerated
   // Configured: a single rounded-sm field with the controls living inside it.
   return (
     <div className="flex flex-col gap-1.5">
-      <div className="flex items-center gap-1 pl-3 pr-1 py-1 border border-border rounded-md bg-bg focus-within:ring-2 focus-within:ring-accent transition-colors">
+      <div className="ai-sql-field flex items-center gap-1 pl-3 pr-1 py-1 border border-border rounded-md bg-bg transition-colors">
         <Input
           value={prompt}
           onChange={setPrompt}
@@ -105,7 +105,7 @@ export const AiSqlBar: React.FC<AiSqlBarProps> = ({ dialect, schema, onGenerated
           {isBusy ? 'Generating…' : 'Generate'}
         </button>
       </div>
-      {error && <AiErrorNotice message={error} provider={status?.provider} />}
+      {error && <AiErrorNotice onDismiss={() => setError(null)} message={error} provider={status?.provider} />}
     </div>
   );
 };

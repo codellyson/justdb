@@ -24,7 +24,7 @@ export const CascadeImpactPanel: React.FC<Props> = ({
   if (loading) {
     return (
       <div className="border border-border rounded-md p-3 bg-bg-secondary/30">
-        <div className="text-xs text-muted">
+        <div className="text-sm text-muted">
           {extendedAttempted ? "Running full preview…" : "Checking cascade impact…"}
         </div>
       </div>
@@ -33,9 +33,9 @@ export const CascadeImpactPanel: React.FC<Props> = ({
 
   if (error) {
     return (
-      <div className="border border-border rounded-md p-3 bg-bg-secondary/30 space-y-2">
-        <div className="text-xs text-secondary">
-          Cascade preview unavailable right now. Your delete can still proceed —
+      <div className="border border-warning/30 rounded-md p-3 bg-warning/5 space-y-2">
+        <div className="text-sm text-secondary">
+          Cascade preview unavailable. The number of related rows affected is unknown. Your delete can still proceed —
           the database will check foreign-key rules at save time and roll back
           the transaction if anything blocks.
         </div>
@@ -43,7 +43,7 @@ export const CascadeImpactPanel: React.FC<Props> = ({
           <button
             type="button"
             onClick={onRetry}
-            className="px-2.5 py-1 text-xs font-medium text-secondary hover:text-primary border border-border rounded-sm hover:bg-bg-secondary transition-colors"
+            className="px-2.5 py-1 text-sm font-medium text-secondary hover:text-primary border border-border rounded-sm hover:bg-bg-secondary transition-colors"
           >
             Retry preview
           </button>
@@ -64,7 +64,7 @@ export const CascadeImpactPanel: React.FC<Props> = ({
 
   if (!hasAny && !truncated && warnings.length === 0) {
     return (
-      <div className="border border-border rounded-md p-3 bg-bg-secondary/30 text-xs text-muted">
+      <div className="border border-border rounded-md p-3 bg-bg-secondary/30 text-sm text-muted">
         No cascade impact — these deletes do not reference any dependent rows.
       </div>
     );
@@ -88,7 +88,7 @@ export const CascadeImpactPanel: React.FC<Props> = ({
           <button
             type="button"
             onClick={() => setShowBreakdown((v) => !v)}
-            className="w-full px-3 py-2 bg-bg-secondary/50 border-b border-border flex items-center gap-3 text-xs hover:bg-bg-secondary/70 transition-colors text-left"
+            className="w-full px-3 py-2 bg-bg-secondary/50 border-b border-border flex items-center gap-3 text-sm hover:bg-bg-secondary/70 transition-colors text-left"
           >
             <span className="font-medium text-primary">Cascade impact</span>
             <span className="text-secondary">
@@ -96,7 +96,7 @@ export const CascadeImpactPanel: React.FC<Props> = ({
               {totalCascade + totalSetNull === 1 ? "" : "s"} across {tableCount}{" "}
               table{tableCount === 1 ? "" : "s"}
             </span>
-            <span className="ml-auto text-muted text-[10px]">
+            <span className="ml-auto text-muted text-meta">
               {showBreakdown ? "hide" : "show breakdown"}
             </span>
           </button>
@@ -113,8 +113,8 @@ export const CascadeImpactPanel: React.FC<Props> = ({
         </div>
       )}
 
-      {!truncated && warnings.length > 0 && (
-        <div className="border border-border rounded-md p-2 bg-bg-secondary/30 text-[11px] text-muted space-y-0.5">
+      {warnings.length > 0 && (
+        <div className="border border-warning/30 rounded-md p-3 bg-warning/5 text-sm text-secondary space-y-1">
           {warnings.map((w, i) => (
             <div key={i}>{w}</div>
           ))}
@@ -130,14 +130,14 @@ const TruncatedBanner: React.FC<{
 }> = ({ extendedAttempted, onRunFullPreview }) => {
   if (extendedAttempted) {
     return (
-      <div className="border border-border rounded-md p-3 bg-bg-secondary/30 text-[11px] text-muted">
+      <div className="border border-warning/30 rounded-md p-3 bg-warning/5 text-sm text-secondary">
         Cascade is bigger than we could map. The breakdown above is partial —
         the actual delete may touch more rows.
       </div>
     );
   }
   return (
-    <div className="border border-border rounded-md p-3 bg-bg-secondary/30 space-y-2 text-[11px] text-muted">
+    <div className="border border-warning/30 rounded-md p-3 bg-warning/5 space-y-2 text-sm text-secondary">
       <div>
         We didn’t finish mapping the cascade. The breakdown above is partial.
       </div>
@@ -145,7 +145,7 @@ const TruncatedBanner: React.FC<{
         <button
           type="button"
           onClick={onRunFullPreview}
-          className="px-2.5 py-1 text-xs font-medium text-secondary hover:text-primary border border-border rounded-sm hover:bg-bg-secondary transition-colors"
+          className="px-2.5 py-1 text-sm font-medium text-secondary hover:text-primary border border-border rounded-sm hover:bg-bg-secondary transition-colors"
         >
           Keep mapping
         </button>
@@ -160,11 +160,11 @@ const BlockedBanner: React.FC<{
 }> = ({ entries, totalRows }) => {
   return (
     <div className="border border-warning/40 bg-warning/10 rounded-md p-3 space-y-1.5">
-      <div className="text-xs font-medium text-warning">
+      <div className="text-sm font-medium text-warning">
         {totalRows} referencing row{totalRows === 1 ? "" : "s"} with RESTRICT —
         the database will refuse this delete
       </div>
-      <ul className="text-xs text-secondary space-y-0.5 pl-1">
+      <ul className="text-sm text-secondary space-y-0.5 pl-1">
         {entries.map((e, i) => (
           <li key={i}>
             <span className="font-mono text-primary">
@@ -189,7 +189,7 @@ const BucketRow: React.FC<{
   const ruleLabel = kind === "cascade" ? "CASCADE" : entry.deleteRule;
 
   return (
-    <div className="px-3 py-2 text-xs">
+    <div className="px-3 py-2 text-sm">
       <button
         type="button"
         onClick={() => setExpanded((v) => !v)}
@@ -201,18 +201,18 @@ const BucketRow: React.FC<{
         <span className="text-secondary">
           {entry.count} row{entry.count === 1 ? "" : "s"}
         </span>
-        <span className="text-[10px] uppercase tracking-wide text-muted">
+        <span className="text-meta uppercase tracking-wide text-muted">
           {ruleLabel}
         </span>
         {entry.truncated && (
-          <span className="text-muted text-[10px]">truncated</span>
+          <span className="text-muted text-meta">truncated</span>
         )}
-        <span className="ml-auto text-muted text-[10px]">
+        <span className="ml-auto text-muted text-meta">
           {expanded ? "−" : "+"}
         </span>
       </button>
       {expanded && (
-        <div className="mt-2 pl-3 border-l-2 border-border text-[11px] text-muted space-y-0.5">
+        <div className="mt-2 pl-3 border-l-2 border-border text-sm text-secondary space-y-0.5">
           <div>
             via{" "}
             <span className="font-mono">{entry.fkColumns.join(", ")}</span>

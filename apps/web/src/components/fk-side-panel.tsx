@@ -175,7 +175,7 @@ export const FKSidePanel: React.FC<FKSidePanelProps> = ({
                 const isFkLink = !!fk && val !== null && val !== undefined;
                 return (
                   <div key={col} className="px-4 py-2">
-                    <dt className="text-[11px] font-medium text-secondary uppercase tracking-wide">
+                    <dt className="text-meta font-medium text-secondary uppercase tracking-wide">
                       {col}
                     </dt>
                     <dd className="mt-0.5 text-sm font-mono text-primary break-all whitespace-pre-wrap">

@@ -29,10 +29,20 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
   useLayoutEffect(() => {
     const root = document.documentElement;
+    // A palette change should be one frame, not hundreds of color transitions.
+    const suppression = document.createElement('style');
+    suppression.textContent = '*,*::before,*::after{transition:none !important}';
+    document.head.appendChild(suppression);
     root.classList.toggle('dark', mode === 'dark');
     root.style.colorScheme = mode;
     root.dataset.theme = 'justdb';
     applyThemeVariant(PALETTES[mode]);
+    void root.offsetHeight;
+    const frame = requestAnimationFrame(() => suppression.remove());
+    return () => {
+      cancelAnimationFrame(frame);
+      suppression.remove();
+    };
   }, [mode]);
 
   useEffect(() => {

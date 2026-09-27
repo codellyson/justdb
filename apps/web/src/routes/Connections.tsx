@@ -4,11 +4,13 @@ import { useConnection } from '../contexts/connection-context';
 import { ConnectionForm } from '../components/connection-form';
 import { SavedConnections } from '../components/saved-connections';
 import { Button } from '../components/ui/button';
+import { AnimatedViews } from '../components/ui/animated-views';
 import type { DBConfig } from '../types';
 import { db, type LocalDatabase, type LocalSqliteFile } from '../lib/db';
+import { localPathLabel } from '../lib/local-path-label';
 import { sqliteDisplayName } from '../lib/connection-url';
-import { ArrowLeft, ArrowRight, Plus, RefreshCw, Settings } from 'lucide-react';
-import { ConnectorLogo } from '../components/connector-logo';
+import { ArrowLeft, Plus, RefreshCw, Settings } from 'lucide-react';
+import { ConnectorBadge } from '../components/connector-logo';
 
 // The disconnected landing — saved connections + new-connection form.
 // Rendered inline by `Home` when there's no active session. There's no
@@ -152,7 +154,7 @@ export function Connections() {
   );
 
   return (
-    <div className="flex min-h-screen flex-col bg-bg">
+    <div className="connections-page flex min-h-screen flex-col bg-bg">
       <header className="flex h-16 shrink-0 items-center justify-between border-b border-border px-5 sm:px-10">
         <div className="flex min-w-0 items-center gap-3">
           <img src="/logo.svg" alt="" width={28} height={28} className="shrink-0" />
@@ -172,11 +174,10 @@ export function Connections() {
       </header>
       <main className="w-full flex-1 px-5 pb-10 pt-12 sm:px-8 lg:pt-14">
         <div className="mx-auto w-full max-w-6xl">
-            <div className="mx-auto mb-8 flex max-w-xl flex-wrap items-start justify-between gap-4">
-              <div>
-                <h1 className="text-2xl font-bold tracking-tight text-primary sm:text-3xl">Connect to a database</h1>
-                <p className="mt-2 text-sm text-secondary">Jump back into a saved connection, or open a new one.</p>
-              </div>
+            <div className="connection-intro mx-auto mb-8 max-w-xl">
+              <p className="mb-3 text-xs font-medium uppercase tracking-[0.14em] text-muted">Your workspace</p>
+              <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
+                <h1 className="text-2xl font-semibold tracking-tight text-primary">Connect to a database</h1>
               {view === 'saved' ? (
                 <Button type="button" variant="primary" onClick={() => setView('new')}>
                   <span className="inline-flex items-center gap-2"><Plus className="size-4" aria-hidden="true" />New connection</span>
@@ -186,63 +187,58 @@ export function Connections() {
                   <ArrowLeft className="size-4" aria-hidden="true" />Saved and local
                 </button>
               )}
+              </div>
+              <p className="mt-3 text-sm text-secondary">Jump back into a saved connection, or open a new one.</p>
             </div>
 
-            <div hidden={view !== 'saved'} className="mx-auto max-w-xl space-y-4">
+            <div className="connection-stage mx-auto max-w-xl">
+            <AnimatedViews active={view}>
+            <div data-active={view === 'saved'} aria-hidden={view !== 'saved'} inert={view !== 'saved'} className="space-y-4">
                 <SavedConnections />
-                <section className="rounded-xl border border-dashed border-border bg-bg-secondary/20 px-5 py-5" aria-label="Detected local databases">
-                  <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-                    <h2 className="flex items-center gap-2 text-sm font-semibold text-primary">
-                      <span className="size-2 rounded-full bg-emerald-400" aria-hidden="true" />
-                      Running on this machine
-                    </h2>
-                    <div className="flex items-center gap-2">
-                      <div className="flex rounded-md border border-border bg-bg p-0.5" role="group" aria-label="Local database type">
-                        {(['postgresql', 'sqlite'] as const).map((kind) => (
-                          <button
-                            key={kind}
-                            type="button"
-                            aria-pressed={localDbType === kind}
-                            onClick={() => setLocalDbType(kind)}
-                            className={`min-h-7 rounded px-2 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${localDbType === kind ? 'bg-accent/15 font-medium text-accent' : 'text-secondary hover:text-primary'}`}
-                          >
-                            {kind === 'postgresql' ? 'PostgreSQL' : 'SQLite'}
-                          </button>
-                        ))}
-                      </div>
-                      <button
-                      type="button"
-                      onClick={() => void (localDbType === 'sqlite' ? scanSqlite(sqliteFolder) : scanLocal())}
-                      disabled={localDbType === 'sqlite' ? sqliteScanning : scanning}
-                      className="flex min-h-9 items-center gap-1.5 rounded-md px-2 text-xs text-secondary hover:bg-bg-secondary hover:text-primary disabled:opacity-50"
-                      aria-label="Scan again"
-                      title="Scan again"
-                    >
-                      <RefreshCw className={`size-3.5 ${(localDbType === 'sqlite' ? sqliteScanning : scanning) ? 'animate-spin' : ''}`} strokeWidth={1.5} />
-                      Rescan
-                    </button>
+                <section className="rounded-xl border border-border bg-bg-secondary/20 px-5 py-5" aria-label="Detected local databases">
+                  <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                    <h2 className="text-sm font-semibold text-primary">Local databases</h2>
+                    <div className="flex flex-wrap items-center gap-2">
+                      {localDbType === 'sqlite' && <button type="button" onClick={() => void chooseSqliteFolder()} disabled={sqliteScanning}
+                        className="min-h-9 rounded-md px-2 text-sm text-secondary hover:bg-bg-secondary hover:text-primary disabled:opacity-50">Choose folder…</button>}
+                      <button type="button" onClick={() => void (localDbType === 'sqlite' ? scanSqlite(sqliteFolder) : scanLocal())}
+                        disabled={localDbType === 'sqlite' ? sqliteScanning : scanning}
+                        className="flex min-h-9 items-center gap-1.5 rounded-md px-2 text-sm text-secondary hover:bg-bg-secondary hover:text-primary disabled:opacity-50"
+                        aria-label="Scan again">
+                        <RefreshCw className={`size-3.5 ${(localDbType === 'sqlite' ? sqliteScanning : scanning) ? 'animate-spin' : ''}`} strokeWidth={1.5} />Rescan
+                      </button>
                     </div>
+                  </div>
+                  <div className="mb-3 flex w-fit rounded-md border border-border bg-bg p-0.5" role="group" aria-label="Local database type">
+                    {(['postgresql', 'sqlite'] as const).map(kind => <button key={kind} type="button" aria-pressed={localDbType === kind}
+                      onClick={() => setLocalDbType(kind)}
+                      className={`min-h-8 rounded px-3 text-sm ${localDbType === kind ? 'bg-accent/15 font-medium text-primary' : 'text-secondary hover:text-primary'}`}>
+                      {kind === 'postgresql' ? 'PostgreSQL' : 'SQLite'}
+                    </button>)}
                   </div>
                   {localDbType === 'sqlite' ? (
                     <>
                       {sqliteFiles.length > 0 ? (
-                        <div className="grid max-h-64 gap-2 overflow-y-auto sm:grid-cols-2">
+                        <div className="max-h-[28rem] overflow-y-auto divide-y divide-border border-t border-border">
                           {displayedSqliteFiles.map((file) => (
-                            <div key={file.path} className="flex items-center justify-between gap-3 rounded-lg border border-border bg-bg-secondary px-3 py-2.5">
-                              <div className="min-w-0">
-                                <p className="flex items-center gap-1.5 truncate text-sm font-medium text-primary" title={file.name}>
-                                  <ConnectorLogo kind={file.source === 'd1-local' ? 'd1' : 'sqlite'} className="size-4 shrink-0" />
-                                  {file.source === 'd1-local' ? `D1 local · ${file.project ?? 'project'}` : file.name}
-                                </p>
-                                <p className="text-[11px] font-mono text-muted truncate" title={file.path}>{file.path}</p>
+                            <div key={file.path} className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 py-4">
+                              <div className="flex min-w-0 flex-1 basis-48 items-center gap-3">
+                                <ConnectorBadge kind={file.source === 'd1-local' ? 'd1' : 'sqlite'} />
+                                <div className="min-w-0 flex-1">
+                                  <p className="break-words text-sm font-medium text-primary">{file.source === 'd1-local' ? file.project ?? file.name : file.name}</p>
+                                  <p className="mt-1 break-all font-mono text-meta leading-relaxed text-muted" title={file.path}>{localPathLabel(file.path, sqliteFiles.map(item => item.path))}</p>
+                                  {file.source === 'd1-local' && <p className="mt-1 text-meta text-muted">D1 local · Read-only</p>}
+                                </div>
                               </div>
                               <Button
                                 type="button"
                                 variant="secondary"
                                 size="sm"
+                                className="shrink-0"
+                                aria-label={`Set up connection for ${file.project ?? file.name} at ${file.path}`}
                                 onClick={() => useSqliteFile(file)}
                               >
-                                <span className="inline-flex items-center gap-1">Use <ArrowRight className="size-3" aria-hidden="true" /></span>
+                                Set up connection
                               </Button>
                             </div>
                           ))}
@@ -254,40 +250,35 @@ export function Connections() {
                             : 'No SQLite or local D1 files found in common folders.'}
                         </p>
                       )}
-                      {sqliteFiles.some((file) => file.source === 'd1-local') && (
-                        <p className="mt-2 text-[11px] text-muted">Local D1 state is separate from Cloudflare's remote database and opens read-only.</p>
-                      )}
                       {sqliteScanError && sqliteFiles.length > 0 && (
                         <p className="mt-2 text-xs text-muted">Refresh failed; showing the previous results.</p>
                       )}
-                      <button
-                        type="button"
-                        onClick={() => void chooseSqliteFolder()}
-                        disabled={sqliteScanning}
-                        className="mt-3 text-xs font-medium text-accent hover:underline disabled:opacity-50"
-                      >
-                        Choose folder…
-                      </button>
+
                     </>
                   ) : detected.length > 0 ? (
-                    <div className="grid gap-2 sm:grid-cols-2">
+                    <div className="divide-y divide-border border-t border-border">
                       {detected.map((instance) => (
-                        <div key={instance.port} className="flex items-center justify-between gap-3 rounded-lg border border-border bg-bg-secondary px-3 py-2.5">
-                          <div className="min-w-0">
-                            <p className="flex items-center gap-1.5 text-sm font-medium text-primary"><ConnectorLogo kind="postgresql" className="size-4" />PostgreSQL</p>
-                            <p className="text-[11px] font-mono text-muted">{instance.host}:{instance.port}</p>
+                        <div key={`${instance.host}:${instance.port}`} className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 py-4">
+                          <div className="flex min-w-0 flex-1 basis-48 items-center gap-3">
+                            <ConnectorBadge kind="postgresql" />
+                            <div className="min-w-0 flex-1">
+                              <p className="text-sm font-medium text-primary">PostgreSQL</p>
+                              <p className="mt-1 break-all text-meta font-mono text-muted">{instance.host}:{instance.port}</p>
+                            </div>
                           </div>
                           <Button
                             type="button"
                             variant="secondary"
                             size="sm"
+                            className="shrink-0"
+                            aria-label={`Set up connection for PostgreSQL at ${instance.host}:${instance.port}`}
                             onClick={() => useDetected(instance)}
                           >
-                            <span className="inline-flex items-center gap-1">Use <ArrowRight className="size-3" aria-hidden="true" /></span>
+                            Set up connection
                           </Button>
                         </div>
                       ))}
-                      <p className="col-span-full pt-1 text-[11px] text-muted">Saved details are reused when available. Check the suggested values before connecting.</p>
+                      <p className="pt-3 text-xs text-muted">Saved details are reused when available. Check the suggested values before connecting.</p>
                       {scanError && <p className="text-xs text-muted">Refresh failed; showing the previous results.</p>}
                     </div>
                   ) : scanning ? (
@@ -299,7 +290,7 @@ export function Connections() {
                   )}
                 </section>
             </div>
-            <div hidden={view !== 'new'} className="mx-auto max-w-xl">
+            <div data-active={view === 'new'} aria-hidden={view !== 'new'} inert={view !== 'new'}>
               <ConnectionForm
                 onConnect={handleConnect}
                 onConnectSaved={handleConnectSaved}
@@ -312,6 +303,8 @@ export function Connections() {
                 detectedSqlite={selectedSqlite}
               />
             </div>
+            </AnimatedViews>
+            </div>
 
             {error && (
               <div className="mt-4 p-3 bg-danger/10 border border-danger/20 rounded-md text-danger text-sm">
@@ -321,7 +314,7 @@ export function Connections() {
 
         </div>
       </main>
-      <footer className="border-t border-border px-5 py-5 text-center text-[11px] text-muted">
+      <footer className="border-t border-border px-5 py-5 text-center text-meta text-muted">
         Built by <a href="https://kreativekorna.com" target="_blank" rel="noopener noreferrer" className="font-medium text-accent hover:underline">KreativeKorna Concepts</a>
       </footer>
     </div>

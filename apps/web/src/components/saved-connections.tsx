@@ -6,7 +6,7 @@ import { useToast } from '../contexts/toast-context';
 import { Button } from './ui/button';
 import { ConfirmDialog } from './ui/confirm-dialog';
 import { describeConnection } from '@/lib/connection-url';
-import { ConnectorLogo, type ConnectorKind } from './connector-logo';
+import { ConnectorBadge, type ConnectorKind } from './connector-logo';
 
 export const SavedConnections: React.FC = () => {
   const { savedConnections, currentConnectionId, connectToSaved, deleteConnection, isConnecting } = useConnection();
@@ -17,7 +17,6 @@ export const SavedConnections: React.FC = () => {
   const visible = savedConnections.filter((connection) =>
     `${connection.name} ${describeConnection(connection.config)}`.toLowerCase().includes(filter.trim().toLowerCase())
   );
-  const deleting = savedConnections.find((connection) => connection.id === deleteTarget);
 
   const handleConnect = async (connectionId: string) => {
     try {
@@ -29,19 +28,19 @@ export const SavedConnections: React.FC = () => {
     }
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (!deleteTarget) return;
-    deleteConnection(deleteTarget);
-    addToast('Connection deleted', 'info');
+    await deleteConnection(deleteTarget);
+    addToast('Saved connection removed', 'info');
     setDeleteTarget(null);
   };
 
   return (
-    <section aria-labelledby="saved-connections-title" className="overflow-hidden rounded-xl border border-border bg-bg-secondary/50">
+    <section aria-labelledby="saved-connections-title" className="connection-card overflow-hidden rounded-xl border border-border bg-bg">
       <div className="flex min-h-16 flex-wrap items-center justify-between gap-3 px-5 py-3">
-        <div className="flex items-center gap-2">
+        <div className="flex items-baseline gap-2">
           <h2 id="saved-connections-title" className="text-sm font-semibold text-primary">Saved connections</h2>
-          <span className="rounded-full bg-bg px-2 py-0.5 text-xs text-secondary">{savedConnections.length}</span>
+          <span className="text-sm leading-5 tabular-nums text-secondary">{savedConnections.length}</span>
         </div>
         {savedConnections.length > 0 && <label className="relative block w-full sm:w-44">
           <Search aria-hidden="true" className="absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted" strokeWidth={1.5} />
@@ -60,18 +59,15 @@ export const SavedConnections: React.FC = () => {
           const isD1 = connection.config.type === 'sqlite' && connection.config.filepath?.startsWith('d1://');
           const isSqlite = connection.config.type === 'sqlite' && !isD1;
           const kind: ConnectorKind = isD1 ? 'd1' : isSqlite ? 'sqlite' : 'postgresql';
-          const kindLabel = isD1 ? 'Cloudflare D1' : isSqlite ? 'SQLite' : 'PostgreSQL';
           return (
-            <div key={connection.id} className="flex min-h-16 items-center gap-3 border-b border-border px-5 py-2.5 last:border-b-0 hover:bg-bg-secondary">
-              <span aria-label={kindLabel} className={`flex size-9 shrink-0 items-center justify-center rounded-lg ${isD1 ? 'bg-amber-500/15' : isSqlite ? 'bg-emerald-500/15' : 'bg-accent/15'}`}>
-                <ConnectorLogo kind={kind} className="size-6" />
-              </span>
+            <div key={connection.id} className="connection-row flex min-h-16 items-center gap-3 border-b border-border px-5 py-2.5 last:border-b-0 hover:bg-bg-secondary">
+              <ConnectorBadge kind={kind} />
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
                   <p className="truncate text-sm font-medium text-primary" title={connection.name}>{connection.name}</p>
-                  {connection.id === currentConnectionId && <span className="shrink-0 rounded bg-accent/10 px-1.5 py-0.5 text-[10px] text-accent">Current</span>}
+                  {connection.id === currentConnectionId && <span className="shrink-0 rounded bg-accent/10 px-1.5 py-0.5 text-meta text-accent">Current</span>}
                 </div>
-                <p className="truncate font-mono text-[11px] text-muted" title={describeConnection(connection.config)}>{describeConnection(connection.config)}</p>
+                <p className="truncate font-mono text-meta text-muted" title={describeConnection(connection.config)}>{describeConnection(connection.config)}</p>
               </div>
               {connection.id !== currentConnectionId && (
                 <Button variant="secondary" size="sm" onClick={() => void handleConnect(connection.id)} disabled={isConnecting}>
@@ -92,9 +88,12 @@ export const SavedConnections: React.FC = () => {
           );
         })}
         {visible.length === 0 && (
-          <div className="flex min-h-28 flex-col items-center justify-center gap-2 px-5 text-center text-xs text-muted">
-            <Database className="size-5" strokeWidth={1.5} aria-hidden="true" />
-            {savedConnections.length === 0 ? 'No saved connections yet.' : 'No connections match your filter.'}
+          <div className="flex min-h-44 flex-col items-center justify-center gap-3 px-6 py-8 text-center">
+            <span className="flex size-11 items-center justify-center rounded-xl border border-border bg-bg-secondary/50 text-secondary"><Database className="size-5" strokeWidth={1.5} aria-hidden="true" /></span>
+            <div>
+              <p className="text-sm font-medium text-primary">{savedConnections.length === 0 ? 'Your workspace starts here' : 'No matching connections'}</p>
+              <p className="mt-1 max-w-72 text-xs leading-relaxed text-muted">{savedConnections.length === 0 ? 'Add a connection above. Save it to pick up right where you left off.' : 'Try a different name, host, or database.'}</p>
+            </div>
           </div>
         )}
       </div>
@@ -102,9 +101,9 @@ export const SavedConnections: React.FC = () => {
         isOpen={deleteTarget !== null}
         onConfirm={confirmDelete}
         onCancel={() => setDeleteTarget(null)}
-        title="Delete connection"
-        message={`Delete “${deleting?.name ?? 'this connection'}”? This removes its saved details and cannot be undone.`}
-        confirmText="Delete"
+        title="Remove saved connection?"
+        message={`Remove “${savedConnections.find(c => c.id === deleteTarget)?.name ?? 'this connection'}” from your saved connections? Its saved connection details will be removed. The database and its data will not be deleted.`}
+        confirmText="Remove connection"
         variant="danger"
       />
     </section>

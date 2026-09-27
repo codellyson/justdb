@@ -29,11 +29,11 @@ export function RowInspector({ row, index, offset, columns, columnTypes, foreign
   };
 
   return (
-    <aside aria-label={`Row ${offset + index + 1} details`} className="fixed inset-y-0 right-0 z-40 flex w-[min(100vw,360px)] flex-col border-l border-border bg-bg shadow-xl lg:relative lg:z-auto lg:w-[340px] lg:shrink-0 lg:shadow-none">
+    <aside aria-label={`Row ${offset + index + 1} details`} className="flex h-full w-[min(100vw,340px)] flex-col border-l border-border bg-bg shadow-xl lg:shadow-none">
       <div className="flex h-12 shrink-0 items-center gap-2 border-b border-border px-4">
         <div className="min-w-0 flex-1">
           <h2 className="truncate text-sm font-semibold text-primary">Row {offset + index + 1}</h2>
-          <p className="text-[11px] text-muted">Select another cell to inspect its row</p>
+          <p className="text-xs text-muted">Select another cell to inspect its row</p>
         </div>
         <button type="button" onClick={copyRow} title="Copy row as JSON" aria-label="Copy row as JSON" className="flex size-8 items-center justify-center rounded-md text-muted hover:bg-bg-secondary hover:text-primary focus-visible:outline-2 focus-visible:outline-accent">
           {copied ? <Check className="size-4 text-success" /> : <Copy className="size-4" />}
@@ -50,8 +50,8 @@ export function RowInspector({ row, index, offset, columns, columnTypes, foreign
             <div key={column} className="border-b border-border py-3 last:border-b-0">
               <div className="mb-1.5 flex min-w-0 items-center gap-2 text-xs">
                 <span className="min-w-0 flex-1 truncate font-medium text-secondary" title={column}>{column}</span>
-                {foreignKey && <span className="shrink-0 text-[10px] text-accent">FK → {foreignKey.table}</span>}
-                <span className="max-w-24 shrink-0 truncate font-mono text-[10px] text-muted" title={columnTypes[column]}>{columnTypes[column]}</span>
+                {foreignKey && <span className="shrink-0 text-meta text-accent">FK → {foreignKey.table}</span>}
+                <span className="max-w-24 shrink-0 truncate font-mono text-meta text-muted" title={columnTypes[column]}>{columnTypes[column]}</span>
               </div>
               <div className="flex min-h-9 items-start gap-1 rounded-md border border-border bg-bg-secondary/40 px-2.5 py-2">
                 <span className={`min-w-0 flex-1 whitespace-pre-wrap break-all font-mono text-xs leading-5 ${value == null ? 'italic text-muted' : 'text-primary'}`}>
@@ -73,7 +73,7 @@ export function RowInspector({ row, index, offset, columns, columnTypes, foreign
           );
         })}
       </div>
-      <div className="shrink-0 border-t border-border px-4 py-3 text-[11px] text-muted">Double-click a cell in the grid to edit it.</div>
+      <div className="shrink-0 border-t border-border px-4 py-3 text-meta text-muted">Double-click a cell in the grid to edit it.</div>
     </aside>
   );
 }

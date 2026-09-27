@@ -51,7 +51,7 @@ export const ToolbarButton = React.forwardRef<HTMLButtonElement, ToolbarButtonPr
         {icon}
         {children}
         {badge != null && badge > 0 && (
-          <Badge className="ml-0.5 h-4 min-w-4 px-1 text-[11px] leading-none">{badge}</Badge>
+          <Badge className="ml-0.5 h-4 min-w-4 px-1 text-meta leading-none">{badge}</Badge>
         )}
       </Button>
     );
@@ -185,7 +185,7 @@ export function MenuItem({
 
 export function MenuLabel({ children }: { children: React.ReactNode }) {
   return (
-    <JustMenuLabel className="text-[11px] uppercase tracking-wide text-muted font-normal">
+    <JustMenuLabel className="text-meta uppercase tracking-wide text-muted font-normal">
       {children}
     </JustMenuLabel>
   );

@@ -284,7 +284,7 @@ function JsonCell({
       }}
       title={expanded ? 'Click to collapse' : 'Click to pretty-print'}
     >
-      <span className="text-[10px] text-accent font-mono">{'{}'}</span>
+      <span className="text-meta text-accent font-mono">{'{}'}</span>
       <span className="truncate">{inline}</span>
       {expanded && rect && typeof document !== 'undefined' &&
         createPortal(
@@ -297,7 +297,7 @@ function JsonCell({
               left: Math.max(8, Math.min(rect.left, window.innerWidth - 460)),
               maxHeight: Math.min(384, window.innerHeight - rect.bottom - 16),
             }}
-            className="z-50 w-[28rem] max-w-[60vw] overflow-auto text-[11px] font-mono whitespace-pre-wrap break-all bg-bg p-2 rounded-sm border border-border shadow-lg"
+            className="z-50 w-[28rem] max-w-[60vw] overflow-auto text-meta font-mono whitespace-pre-wrap break-all bg-bg p-2 rounded-sm border border-border shadow-lg"
           >
             {pretty}
           </pre>,

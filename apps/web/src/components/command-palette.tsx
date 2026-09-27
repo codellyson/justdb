@@ -148,14 +148,14 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose,
               >
                 <div className="flex items-center gap-2 min-w-0">
                   {action.category && (
-                    <span className="text-[10px] uppercase tracking-wide text-muted flex-shrink-0">
+                    <span className="text-meta uppercase tracking-wide text-muted flex-shrink-0">
                       {action.category}
                     </span>
                   )}
                   <span className="truncate">{action.label}</span>
                 </div>
                 {action.shortcut && (
-                  <kbd className="px-1.5 py-0.5 text-[11px] font-mono bg-bg-secondary border border-border rounded-sm text-muted flex-shrink-0">
+                  <kbd className="px-1.5 py-0.5 text-meta font-mono bg-bg-secondary border border-border rounded-sm text-muted flex-shrink-0">
                     {action.shortcut}
                   </kbd>
                 )}
@@ -163,7 +163,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose,
             ))
           )}
         </div>
-        <div className="px-4 py-2 border-t border-border bg-bg-secondary/40 text-[11px] text-muted flex items-center gap-3">
+        <div className="px-4 py-2 border-t border-border bg-bg-secondary/40 text-meta text-muted flex items-center gap-3">
           <span><kbd className="px-1 py-0.5 bg-bg rounded-sm border border-border">↑↓</kbd> navigate</span>
           <span><kbd className="px-1 py-0.5 bg-bg rounded-sm border border-border">Enter</kbd> run</span>
           <span><kbd className="px-1 py-0.5 bg-bg rounded-sm border border-border">Esc</kbd> close</span>

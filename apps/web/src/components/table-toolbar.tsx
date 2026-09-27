@@ -99,178 +99,183 @@ export function TableToolbar({
   const notData = view !== 'data';
 
   return (
-    <div className="table-toolbar-rail flex items-stretch flex-wrap shrink-0 border-b border-border bg-bg">
-      <SegmentedControl
-        value={view}
-        onChange={onViewChange}
-        options={[
-          { value: 'data', label: 'Data', icon: <Table2 className="h-4 w-4" /> },
-          { value: 'structure', label: 'Structure', icon: <Table className="h-4 w-4" /> },
-        ]}
-      />
-
-      <ToolbarGroup>
-        <ToolbarMenu
-          label="Filters"
-          icon={<ListFilter className="h-4 w-4" />}
-          badge={filters.length}
-          disabled={notData}
-          width={280}
-        >
-          <>
-            {filters.length === 0 ? (
-              <div className="px-2 py-2 text-xs text-muted">
-                No filters. Add one from a column header menu.
-              </div>
-            ) : (
-              <>
-                {filters.map((f) => (
-                  <MenuItem key={f.column} onClick={() => onRemoveFilter(f.column)}>
-                    <span className="flex-1 truncate">
-                      <span className="text-primary">{f.column}</span>{' '}
-                      <span className="text-muted">
-                        {f.operator} {String(f.value ?? '')}
-                      </span>
-                    </span>
-                    <X className="h-3.5 w-3.5 text-muted" />
-                  </MenuItem>
-                ))}
-                <MenuSeparator />
-                <MenuItem onClick={onClearFilters} danger>
-                  Clear all filters
-                </MenuItem>
-              </>
-            )}
-          </>
-        </ToolbarMenu>
-
-        <ToolbarMenu
-          label="Sort"
-          icon={<ArrowUpDown className="h-4 w-4" />}
-          active={!!sortColumn}
-          disabled={notData || columns.length === 0}
-          width={240}
-        >
-          <>
-            <MenuLabel>Sort by</MenuLabel>
-            {columns.map((col) => (
-              <MenuItem key={col} onClick={() => onSort(col)}>
-                <span className="flex-1 truncate">{col}</span>
-                {sortColumn === col && (
-                  <span className="text-accent">{sortDirection === 'asc' ? '↑' : '↓'}</span>
-                )}
-              </MenuItem>
-            ))}
-            {sortColumn && (
-              <>
-                <MenuSeparator />
-                <MenuItem onClick={onClearSort}>Clear sort</MenuItem>
-              </>
-            )}
-          </>
-        </ToolbarMenu>
-
-        <ToolbarMenu
-          label="Columns"
-          icon={<Columns3 className="h-4 w-4" />}
-          badge={hiddenCount > 0 ? hiddenCount : undefined}
-          disabled={notData || columns.length === 0}
-          width={240}
-        >
-          <>
-            <div className="flex gap-1 px-1 pb-1">
-              <button
-                type="button"
-                onClick={onShowAllColumns}
-                className="flex-1 px-2 py-1 text-xs rounded-sm text-secondary hover:text-primary hover:bg-bg-secondary"
-              >
-                Show all
-              </button>
-              <button
-                type="button"
-                onClick={onHideAllColumns}
-                className="flex-1 px-2 py-1 text-xs rounded-sm text-secondary hover:text-primary hover:bg-bg-secondary"
-              >
-                Hide all
-              </button>
-            </div>
-            <MenuSeparator />
-            {columns.map((col) => (
-              <MenuItem
-                key={col}
-                onClick={() => onToggleColumn(col)}
-                onSelect={(e) => e.preventDefault()}
-              >
-                <Checkbox checked={visibleColumns.includes(col)} className="pointer-events-none" />
-                <span className="flex-1 truncate">{col}</span>
-              </MenuItem>
-            ))}
-          </>
-        </ToolbarMenu>
-      </ToolbarGroup>
-
-      <WhereFilterInput filters={filters} columns={columns} onApply={onApplyFilters} disabled={notData || columns.length === 0} />
-
-      <ToolbarButton
-        icon={<Plus className="h-4 w-4" />}
-        variant="accent"
-        disabled={!canAddRecord || notData}
-        onClick={onAddRecord}
-        tooltip="Add record (Alt+N)"
-      >
-        <span>Add record</span>
-      </ToolbarButton>
-
-      {pendingCount > 0 && view === 'data' && (
-        <>
-          <ToolbarButton
-            onClick={onSaveChanges}
-            className="bg-success/15 text-success hover:bg-success/25"
-            title={`Review and run ${pendingCount} pending ${pendingCount === 1 ? 'change' : 'changes'}`}
-          >
-            Save changes
-          </ToolbarButton>
-          <ToolbarButton
-            onClick={onDiscardChanges}
-            className="underline underline-offset-2 hover:text-danger"
-            title="Discard all pending changes"
-          >
-            Discard changes
-          </ToolbarButton>
-        </>
-      )}
-
-      <ToolbarButton
-        icon={<PanelRight className="h-4 w-4" />}
-        onClick={onToggleInspector}
-        disabled={notData || !canInspect}
-        aria-pressed={inspectorOpen}
-        tooltip="Toggle row details"
-        className={inspectorOpen ? 'bg-accent/10 text-accent' : ''}
-      >
-        Row details
-      </ToolbarButton>
-
-      <ToolbarGroup>
-        <ToolbarButton
-          icon={<RefreshCw className={`h-4 w-4 ${isBusy ? 'animate-spin' : ''}`} />}
-          aria-label="Refresh rows"
-          tooltip="Refresh rows (Alt+R)"
-          onClick={onRefresh}
+    <div className="table-toolbar shrink-0 border-b border-border bg-bg">
+      <div className="flex min-h-12 items-center justify-between gap-4 overflow-x-auto px-3 py-2 scrollbar-none">
+        <SegmentedControl
+          value={view}
+          onChange={onViewChange}
+          options={[
+            { value: 'data', label: 'Data', icon: <Table2 className="h-4 w-4" /> },
+            { value: 'structure', label: 'Structure', icon: <Table className="h-4 w-4" /> },
+          ]}
         />
-        <ToolbarMenu
-          icon={<MoreHorizontal className="h-4 w-4" />}
-          align="right"
-          title="More actions"
-          width={200}
-        >
-          <>
-            <MenuItem onClick={onRefreshSchema}>Refresh schema</MenuItem>
-            <MenuItem onClick={onImportCsv}>Import CSV</MenuItem>
-            <MenuItem onClick={onExport}>Export</MenuItem>
-          </>
-        </ToolbarMenu>
-      </ToolbarGroup>
+
+        <div className="table-row-actions flex shrink-0 items-center gap-2">
+          <ToolbarButton
+            icon={<Plus className="h-4 w-4" />}
+            disabled={!canAddRecord || notData}
+            onClick={onAddRecord}
+            tooltip="Add record (Alt+N)"
+          >
+            <span>Add record</span>
+          </ToolbarButton>
+
+          {pendingCount > 0 && view === 'data' && (
+            <>
+              <ToolbarButton
+                onClick={onSaveChanges}
+                variant="accent"
+                title={`Review and run ${pendingCount} pending ${pendingCount === 1 ? 'change' : 'changes'}`}
+              >
+                Save changes ({pendingCount})
+              </ToolbarButton>
+              <ToolbarButton
+                onClick={onDiscardChanges}
+                className="underline underline-offset-2 hover:text-danger"
+                title="Discard all pending changes"
+              >
+                Discard changes
+              </ToolbarButton>
+            </>
+          )}
+
+          <ToolbarButton
+            icon={<PanelRight className="h-4 w-4" />}
+            onClick={onToggleInspector}
+            disabled={notData || !canInspect}
+            aria-pressed={inspectorOpen}
+            tooltip="Toggle row details"
+            className={inspectorOpen ? 'bg-accent/10 text-accent' : ''}
+          >
+            Row details
+          </ToolbarButton>
+
+          <ToolbarGroup className="ml-1 border-l border-border pl-2">
+            <ToolbarButton
+              icon={<RefreshCw className={`h-4 w-4 ${isBusy ? 'animate-spin' : ''}`} />}
+              aria-label="Refresh rows"
+              tooltip="Refresh rows (Alt+R)"
+              onClick={onRefresh}
+            />
+            <ToolbarMenu
+              icon={<MoreHorizontal className="h-4 w-4" />}
+              align="right"
+              title="More actions"
+              width={200}
+            >
+              <>
+                <MenuItem onClick={onRefreshSchema}>Refresh schema</MenuItem>
+                <MenuItem onClick={onImportCsv}>Import CSV</MenuItem>
+                <MenuItem onClick={onExport}>Export</MenuItem>
+              </>
+            </ToolbarMenu>
+          </ToolbarGroup>
+        </div>
+      </div>
+      <div className="table-filter-tools flex min-h-12 items-center gap-3 border-t border-border/60 px-3 py-2">
+        <ToolbarGroup>
+          <ToolbarMenu
+            label="Filters"
+            icon={<ListFilter className="h-4 w-4" />}
+            badge={filters.length}
+            disabled={notData}
+            width={280}
+          >
+            <>
+              {filters.length === 0 ? (
+                <div className="px-2 py-2 text-xs text-muted">
+                  No filters. Add one from a column header menu.
+                </div>
+              ) : (
+                <>
+                  {filters.map((f) => (
+                    <MenuItem key={f.column} onClick={() => onRemoveFilter(f.column)}>
+                      <span className="flex-1 truncate">
+                        <span className="text-primary">{f.column}</span>{' '}
+                        <span className="text-muted">
+                          {f.operator} {String(f.value ?? '')}
+                        </span>
+                      </span>
+                      <X className="h-3.5 w-3.5 text-muted" />
+                    </MenuItem>
+                  ))}
+                  <MenuSeparator />
+                  <MenuItem onClick={onClearFilters} danger>
+                    Clear all filters
+                  </MenuItem>
+                </>
+              )}
+            </>
+          </ToolbarMenu>
+
+          <ToolbarMenu
+            label="Sort"
+            icon={<ArrowUpDown className="h-4 w-4" />}
+            active={!!sortColumn}
+            disabled={notData || columns.length === 0}
+            width={240}
+          >
+            <>
+              <MenuLabel>Sort by</MenuLabel>
+              {columns.map((col) => (
+                <MenuItem key={col} onClick={() => onSort(col)}>
+                  <span className="flex-1 truncate">{col}</span>
+                  {sortColumn === col && (
+                    <span className="text-accent">{sortDirection === 'asc' ? '↑' : '↓'}</span>
+                  )}
+                </MenuItem>
+              ))}
+              {sortColumn && (
+                <>
+                  <MenuSeparator />
+                  <MenuItem onClick={onClearSort}>Clear sort</MenuItem>
+                </>
+              )}
+            </>
+          </ToolbarMenu>
+
+          <ToolbarMenu
+            label="Columns"
+            icon={<Columns3 className="h-4 w-4" />}
+            badge={hiddenCount > 0 ? hiddenCount : undefined}
+            disabled={notData || columns.length === 0}
+            width={240}
+          >
+            <>
+              <div className="flex gap-1 px-1 pb-1">
+                <button
+                  type="button"
+                  onClick={onShowAllColumns}
+                  className="flex-1 px-2 py-1 text-xs rounded-sm text-secondary hover:text-primary hover:bg-bg-secondary"
+                >
+                  Show all
+                </button>
+                <button
+                  type="button"
+                  onClick={onHideAllColumns}
+                  className="flex-1 px-2 py-1 text-xs rounded-sm text-secondary hover:text-primary hover:bg-bg-secondary"
+                >
+                  Hide all
+                </button>
+              </div>
+              <MenuSeparator />
+              {columns.map((col) => (
+                <MenuItem
+                  key={col}
+                  onClick={() => onToggleColumn(col)}
+                  onSelect={(e) => e.preventDefault()}
+                >
+                  <Checkbox checked={visibleColumns.includes(col)} className="pointer-events-none" />
+                  <span className="flex-1 truncate">{col}</span>
+                </MenuItem>
+              ))}
+            </>
+          </ToolbarMenu>
+        </ToolbarGroup>
+
+        <WhereFilterInput filters={filters} columns={columns} onApply={onApplyFilters} disabled={notData || columns.length === 0} />
+
+      </div>
     </div>
   );
 }

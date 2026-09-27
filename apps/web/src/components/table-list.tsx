@@ -112,7 +112,7 @@ const TableButton: React.FC<{
       onFocus={onFocus}
       onContextMenu={onContextMenu}
       tabIndex={tabIndex}
-      className={`group w-full text-left px-2.5 py-1.5 text-[13px] rounded-md transition-all duration-150 focus:outline-hidden focus:ring-1 focus:ring-accent/40 flex items-center gap-2 ${
+      className={`group w-full text-left px-2.5 py-1.5 text-[13px] rounded-md transition-colors duration-150 focus:outline-hidden focus:ring-1 focus:ring-accent/40 flex items-center gap-2 ${
         selected
           ? 'bg-accent/10 text-accent font-medium shadow-xs shadow-accent/5'
           : 'text-secondary hover:text-primary hover:bg-bg-secondary'
@@ -127,7 +127,7 @@ const TableButton: React.FC<{
         }`} />
       <span className="truncate flex-1">{table}</span>
       {countLabel !== null && (
-        <span className="text-[10px] text-muted flex-shrink-0 font-mono">{countLabel}</span>
+        <span className="text-meta text-muted flex-shrink-0 font-mono">{countLabel}</span>
       )}
     </button>
   );
@@ -346,7 +346,7 @@ export const TableList: React.FC<TableListProps> = ({
         {onToggleGroupByPrefix && (
           <button
             onClick={onToggleGroupByPrefix}
-            className={`px-1.5 py-1 text-[10px] font-medium rounded-sm transition-colors ${
+            className={`px-1.5 py-1 text-meta font-medium rounded-sm transition-colors ${
               groupByPrefixOn ? 'bg-accent/15 text-accent' : 'text-muted hover:text-primary hover:bg-bg-secondary'
             }`}
             title="Group tables by prefix"
@@ -360,19 +360,19 @@ export const TableList: React.FC<TableListProps> = ({
       <ul ref={(_el) => undefined} className="space-y-px" role="listbox" aria-label="Tables" onKeyDown={handleKeyDown}>
         {pinnedVisible.length > 0 && (
           <>
-            <li className="text-[10px] uppercase tracking-wide text-muted px-2 pt-1 pb-0.5">Pinned</li>
+            <li className="text-meta uppercase tracking-wide text-muted px-2 pt-1 pb-0.5">Pinned</li>
             {pinnedVisible.map((t) => renderRow(t))}
           </>
         )}
         {recentVisible.length > 0 && (
           <>
-            <li className="text-[10px] uppercase tracking-wide text-muted px-2 pt-2 pb-0.5">Recent</li>
+            <li className="text-meta uppercase tracking-wide text-muted px-2 pt-2 pb-0.5">Recent</li>
             {recentVisible.map((t) => renderRow(t))}
           </>
         )}
 
         {(pinnedVisible.length > 0 || recentVisible.length > 0) && (
-          <li className="text-[10px] uppercase tracking-wide text-muted px-2 pt-2 pb-0.5">
+          <li className="text-meta uppercase tracking-wide text-muted px-2 pt-2 pb-0.5">
             {isSearching ? 'Results' : 'All tables'}
           </li>
         )}
@@ -383,7 +383,7 @@ export const TableList: React.FC<TableListProps> = ({
               <li>
                 <button
                   onClick={() => toggleGroup(g.prefix)}
-                  className="w-full flex items-center gap-1 px-2 py-1 text-[11px] font-medium text-secondary hover:text-primary transition-colors"
+                  className="w-full flex items-center gap-1 px-2 py-1 text-meta font-medium text-secondary hover:text-primary transition-colors"
                 >
                   <span className="font-mono text-muted">
                     {collapsedGroups.has(g.prefix) ? '▸' : '▾'}

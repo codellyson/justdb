@@ -38,7 +38,8 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({ x, y, items, onClose }
       const newY = y + rect.height > window.innerHeight ? y - rect.height : y;
       setPosition({ x: Math.max(0, newX), y: Math.max(0, newY) });
     }
-    requestAnimationFrame(() => setIsVisible(true));
+    const frame = requestAnimationFrame(() => setIsVisible(true));
+    return () => cancelAnimationFrame(frame);
   }, [x, y]);
 
   useEffect(() => {
@@ -62,7 +63,7 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({ x, y, items, onClose }
   return (
     <div
       ref={menuRef}
-      className={`fixed z-[100] bg-bg border border-border rounded-lg shadow-lg min-w-[180px] py-1 transition-all duration-100 ease-out ${
+      className={`fixed z-[100] bg-bg border border-border rounded-lg shadow-lg min-w-[180px] py-1 transition-[opacity,scale] duration-100 ease-out ${
         isVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-[0.97]'
       }`}
       style={{ left: position.x, top: position.y, transformOrigin: 'top left' }}

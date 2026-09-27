@@ -1,3 +1,5 @@
+import { useConnection } from '../contexts/connection-context';
+import { useInstalledProviders, setProviderInstalled } from '@/lib/connector-catalog';
 import React, { useState, useEffect, useCallback } from 'react';
 import { Modal } from './ui/modal';
 import { Select } from './ui/select';
@@ -5,16 +7,18 @@ import { FormatterSettingsBody } from './formatter-settings';
 import { ai, PROVIDERS, type AiStatus, type ProviderId, type LocalAgentInfo } from '@/lib/ai';
 import { useTheme } from '../contexts/theme-context';
 import {
+  getExperienceMode, setExperienceMode, type ExperienceMode,
   getResultRowCap, setResultRowCap, DEFAULT_ROW_CAP,
   getIdleTimeoutMin, setIdleTimeoutMin, DEFAULT_IDLE_MIN,
   getEditorLineNumbers, setEditorLineNumbers, EDITOR_SETTINGS_EVENT,
   getTelemetryEnabled, setTelemetryEnabled,
 } from '@/lib/app-settings';
-import { Check, LockKeyhole, Maximize2, PanelRightOpen, Sparkles, Trash2, X } from 'lucide-react';
+import { Check, Maximize2, PanelRightOpen, X } from 'lucide-react';
 import { Input, Switch } from '@codellyson/justui/react';
 import { Button } from './ui';
 import { ConnectorLogo, type ConnectorKind } from './connector-logo';
 import { ConfirmDialog } from './ui/confirm-dialog';
+import { useMotionPresence } from '../hooks/use-motion-presence';
 
 export type SettingsTab = 'ai' | 'connectors' | 'appearance' | 'formatting' | 'data' | 'privacy';
 
@@ -38,16 +42,17 @@ const TABS: { id: SettingsTab; label: string }[] = [
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, docked, onToggleDock, initialTab }) => {
   const [tab, setTab] = useState<SettingsTab>(initialTab ?? 'ai');
+  const presence = useMotionPresence(isOpen);
   useEffect(() => {
     if (isOpen && initialTab) setTab(initialTab);
   }, [isOpen, initialTab]);
-  if (!isOpen) return null;
+  if (!presence.mounted) return null;
 
   const navigation = (
       <nav
         aria-label="Settings sections"
         className={docked
-          ? 'flex shrink-0 gap-2 overflow-x-auto border-b border-border px-5 scrollbar-none'
+          ? 'settings-nav-grid grid shrink-0 grid-cols-3 gap-2 border-b border-border p-3'
           : 'flex w-36 shrink-0 flex-col gap-0.5 border-r border-border pr-5 py-4'}
       >
         {TABS.map((t) => (
@@ -57,7 +62,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, d
             aria-current={tab === t.id ? 'page' : undefined}
             onClick={() => setTab(t.id)}
             className={docked
-              ? `min-h-12 shrink-0 border-b-2 px-2 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent ${tab === t.id ? 'border-accent text-primary' : 'border-transparent text-muted hover:text-primary'}`
+              ? `min-h-9 min-w-0 rounded-md px-2 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent ${tab === t.id ? 'bg-bg-secondary text-primary' : 'text-muted hover:bg-bg-secondary hover:text-primary'}`
               : `min-h-8 rounded-md px-2.5 py-1.5 text-left text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
               tab === t.id ? 'bg-accent/10 font-medium text-accent' : 'text-secondary hover:bg-bg-secondary hover:text-primary'
             }`}
@@ -76,13 +81,19 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, d
       </nav>
   );
   const content = (
-      <div className={docked ? 'min-h-0 min-w-0 flex-1 overflow-y-auto px-5 py-6' : 'h-[min(60vh,520px)] min-w-0 flex-1 overflow-y-auto py-4 pr-1'}>
-        {tab === 'ai' && <AiSection docked={docked} />}
+      <div className={docked ? 'min-h-0 min-w-0 flex-1 overflow-y-auto px-5 py-5' : 'h-[min(60vh,520px)] min-w-0 flex-1 overflow-y-auto py-4 pr-1'}>
+        <div key={tab} className="settings-section settings-content">
+          <header className="mb-4">
+            <h3 className="text-sm font-medium text-primary">{({ ai: 'AI assistant', connectors: 'Database connectors', appearance: 'Appearance', formatting: 'Cell formatting', data: 'Editor & results', privacy: 'Privacy' })[tab]}</h3>
+            <p className="mt-1 text-xs leading-relaxed text-muted">{({ ai: 'Provider and credentials for Generate and AI mode.', connectors: 'Connection types included with JustDB.', appearance: 'Choose how your workspace looks.', formatting: 'Change how values appear without changing stored data.', data: 'Defaults for queries and connections.', privacy: 'Choose what you share with JustDB.' })[tab]}</p>
+          </header>
+        {tab === 'ai' && <AiSection />}
         {tab === 'connectors' && <ConnectorsSection />}
         {tab === 'appearance' && <AppearanceSection />}
-        {tab === 'formatting' && <FormatterSettingsBody />}
+        {tab === 'formatting' && <FormatterSettingsBody embedded />}
         {tab === 'data' && <DataSection />}
         {tab === 'privacy' && <PrivacySection />}
+        </div>
       </div>
   );
 
@@ -92,12 +103,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, d
         <button
           type="button"
           onClick={onClose}
-          className="fixed inset-0 z-30 bg-black/40 lg:hidden"
+          data-visible={presence.visible}
+          inert={!isOpen}
+          className="settings-backdrop fixed inset-0 z-30 bg-black/40 lg:hidden"
           aria-label="Close settings"
         />
-        <aside aria-label="Settings" className="fixed inset-y-0 right-0 z-40 flex w-full max-w-[460px] flex-col border-l border-border bg-bg shadow-xl lg:shadow-none">
-          <div className="flex h-16 shrink-0 items-center justify-between border-b border-border px-5">
-            <h2 className="text-xl font-semibold text-primary">Settings</h2>
+        <aside aria-label="Settings" aria-hidden={!isOpen} inert={!isOpen} data-visible={presence.visible} className="settings-drawer fixed inset-y-0 right-0 z-40 flex w-full max-w-[460px] flex-col border-l border-border bg-bg shadow-xl lg:shadow-none">
+          <div className="flex h-14 shrink-0 items-center justify-between border-b border-border px-5">
+            <h2 className="text-base font-semibold text-primary">Settings</h2>
             <div className="flex items-center gap-2">
               <button
                 type="button"
@@ -131,34 +144,51 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, d
   );
 };
 
-const ConnectorsSection: React.FC = () => (
-  <div className="space-y-4">
-    <div>
-      <h3 className="text-sm font-semibold text-primary">Database connectors</h3>
-      <p className="mt-1 text-xs text-muted">Connection types included with JustDB.</p>
+const ConnectorsSection: React.FC = () => {
+  const installed = useInstalledProviders();
+  const { isConnected, activeConnector, databaseName, disconnect } = useConnection();
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const disconnectActive = async () => {
+    setBusy(true); setError(null);
+    try { await disconnect(); } catch (e) { setError(String(e)); } finally { setBusy(false); }
+  };
+  return <div className="space-y-5">
+    {isConnected && <div className="flex items-center justify-between gap-3 border-b border-border pb-3">
+      <div className="min-w-0"><p className="text-sm text-primary">Active connection</p><p className="mt-1 break-all text-xs text-muted">{databaseName}</p></div>
+      <Button size="sm" variant="secondary" disabled={busy} onClick={() => void disconnectActive()}>Disconnect</Button>
+    </div>}
+    <div><p className="mb-1 text-xs text-muted">Default connectors</p>
+      {[{ id: 'postgresql', name: 'PostgreSQL', detail: 'Local and remote servers' }, { id: 'sqlite', name: 'Local SQLite', detail: 'Database files on this device' }].map(item => <div key={item.id} className="flex items-center gap-3 border-b border-border py-3">
+        <ConnectorLogo kind={item.id as ConnectorKind} className="size-5 shrink-0" />
+        <div className="min-w-0 flex-1"><p className="text-sm text-primary">{item.name}</p><p className="mt-1 text-xs text-muted">{item.detail}</p></div>
+        <span className="text-meta text-muted">Built in</span>
+      </div>)}
     </div>
-    <div className="space-y-2">
-      {[
-        { name: 'PostgreSQL', detail: 'Local and remote servers', kind: 'postgresql' },
-        { name: 'SQLite', detail: 'Local files and libSQL', kind: 'sqlite' },
-        { name: 'Cloudflare D1', detail: 'Local state and remote API', kind: 'd1' },
-      ].map(({ name, detail, kind }) => (
-        <div key={name} className="flex items-start gap-3 rounded-md border border-border px-3 py-2.5">
-          <ConnectorLogo kind={kind as ConnectorKind} className="mt-0.5 size-5 shrink-0" />
-          <div className="min-w-0 flex-1">
-            <p className="text-sm font-medium text-primary">{name}</p>
-            <p className="text-xs text-muted">{detail}</p>
-          </div>
-          <span className="shrink-0 rounded-full bg-bg-secondary px-2 py-0.5 text-[11px] text-secondary">Included</span>
-        </div>
-      ))}
+    <div><p className="text-xs text-muted">SQLite providers</p><p className="mt-1 text-xs leading-relaxed text-muted">Install to add a connection option. Provider support is bundled with JustDB.</p>
+      {([{ id: 'd1', name: 'Cloudflare D1', detail: 'SQLite on Cloudflare' }, { id: 'turso', name: 'Turso / libSQL', detail: 'Remote SQLite databases' }] as const).map(item => <div key={item.id} className="flex items-center gap-3 border-b border-border py-3">
+        <ConnectorLogo kind={item.id === 'd1' ? 'd1' : 'sqlite'} className="size-5 shrink-0" />
+        <div className="min-w-0 flex-1"><p className="text-sm text-primary">{item.name}</p><p className="mt-1 text-xs text-muted">{item.detail}</p></div>
+        <Button size="sm" variant="secondary" disabled={busy} onClick={async () => {
+          const removing = installed.includes(item.id);
+          if (removing && isConnected && activeConnector === item.id) {
+            setBusy(true);
+            try { await disconnect(); } catch (e) { setError(String(e)); return; } finally { setBusy(false); }
+          }
+          setProviderInstalled(item.id, !removing);
+        }}>{installed.includes(item.id) ? 'Remove' : 'Install'}</Button>
+      </div>)}
     </div>
-  </div>
-);
+    <div><p className="mb-1 text-xs text-muted">Coming soon</p>
+      {['MariaDB', 'MySQL', 'MongoDB', 'CockroachDB'].map(name => <div key={name} className="flex items-center justify-between border-b border-border py-3 text-xs"><span className="text-secondary">{name}</span><span className="text-meta text-muted">Coming soon</span></div>)}
+    </div>
+    {error && <p role="alert" className="text-xs text-danger">{error}</p>}
+  </div>;
+};
 
 // ─── AI ───────────────────────────────────────────────────────────────────
 
-const AiSection: React.FC<{ docked: boolean }> = ({ docked }) => {
+const AiSection: React.FC = () => {
   const [status, setStatus] = useState<AiStatus | null>(null);
   const [provider, setProvider] = useState<ProviderId>('anthropic');
   const [apiKey, setApiKey] = useState('');
@@ -232,140 +262,95 @@ const AiSection: React.FC<{ docked: boolean }> = ({ docked }) => {
       setRemoveConfirm(false);
       await refresh();
     } catch (e: any) {
-      setError(e?.message || 'Failed to remove key');
+      throw new Error(e?.message || 'Failed to remove key');
     } finally {
       setBusy(false);
     }
   }, [refresh]);
 
+  const configuredProvider = PROVIDERS.find(p => p.id === status?.provider);
   return (
-    <div className={`flex flex-col gap-6 ${docked ? 'min-h-full' : ''}`}>
-      <div className="flex items-center gap-3 rounded-xl border border-border bg-bg-secondary/30 p-4">
-        <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-bg-secondary text-secondary">
-          <Sparkles className="size-5" strokeWidth={1.5} aria-hidden="true" />
+    <div>
+      <div className="flex items-center justify-between gap-3 pb-3 text-xs">
+        <span className="text-muted">Current setup</span>
+        <span className="inline-flex min-w-0 items-center gap-1.5 text-secondary">
+          <span className={`size-1.5 shrink-0 rounded-full ${status?.configured ? 'bg-success' : 'bg-muted'}`} />
+          {status === null ? 'Checking…' : status.configured
+            ? `${configuredProvider?.local ? 'Claude Code' : configuredProvider?.label ?? status.provider}${status.model ? ` · ${status.model}` : ''}`
+            : 'Not connected'}
         </span>
-        <div className="min-w-0">
-          <p className="flex items-center gap-2 text-sm font-semibold text-primary">
-            {status === null ? 'Checking setup…' : status.configured ? 'Configured' : 'Not configured'}
-          </p>
-          <p className="truncate text-xs text-secondary">
-            {status?.configured
-              ? `${PROVIDERS.find((p) => p.id === status.provider)?.label ?? status.provider} · ${status.model ?? ''}`
-              : 'Choose a provider to enable AI features.'}
-          </p>
+      </div>
+      <div className="settings-field">
+        <span className="settings-label" id="ai-provider-label">Provider</span>
+        <div className="min-w-0" role="group" aria-labelledby="ai-provider-label">
+          <Select className="settings-provider-select" containerClassName="w-full" ariaLabel="Provider" value={provider} onChange={(value) => {
+            const next = value as ProviderId;
+            setProvider(next); setApiKey('');
+            setModel(next === status?.provider ? status.customModel ?? '' : '');
+            setSaved(false); setError(null);
+          }}>
+            {PROVIDERS.map(p => <option key={p.id} value={p.id}>{p.local ? 'Claude Code (local)' : p.label}</option>)}
+          </Select>
         </div>
       </div>
-      <div className="space-y-1.5">
-        <label className="block text-sm font-medium text-secondary">Provider</label>
-        <Select ariaLabel="Provider" value={provider} onChange={(value) => {
-          const next = value as ProviderId;
-          setProvider(next);
-          setApiKey('');
-          setModel(next === status?.provider ? status.customModel ?? '' : '');
-          setSaved(false);
-          setError(null);
-        }}>
-          {PROVIDERS.map((p) => <option key={p.id} value={p.id}>{p.label}</option>)}
-        </Select>
-      </div>
-      <div className="space-y-1.5">
-        <div className="flex items-center justify-between gap-2">
-          <label className="text-sm font-medium text-secondary" htmlFor="ai-model">Model</label>
-          <span className="text-xs text-muted">Optional</span>
+      <div className="settings-field">
+        <label className="settings-label" htmlFor="ai-model">Model</label>
+        <div className="min-w-0 space-y-1.5">
+          <Input id="ai-model" value={model} onChange={value => { setModel(value); setSaved(false); }} placeholder={meta.defaultModel} />
+          <p className="settings-help">Optional. Leave blank for the provider default.</p>
         </div>
-        <Input
-          id="ai-model"
-          value={model}
-          onChange={(value) => { setModel(value); setSaved(false); }}
-          placeholder={meta.defaultModel}
-        />
-        <p className="text-xs text-muted">Leave empty to use the provider default.</p>
       </div>
       {isLocal ? (
-        <div className="space-y-2">
-          <div className="flex items-center gap-2 text-xs rounded-md border border-border px-2.5 py-1.5">
-            <span
-              className={`w-1.5 h-1.5 flex-shrink-0 rounded-full ${
-                localAgent === undefined ? 'bg-muted' : localAgent.present ? 'bg-green-500' : 'bg-danger'
-              }`}
-            />
-            <span className="min-w-0 flex-1">
-              {localAgent === undefined
-                ? 'Checking for a local agent…'
-                : localAgent.present
-                  ? <span className="text-primary">Found <span className="font-medium">{localAgent.name}</span>{localAgent.path && <span className="font-mono text-muted"> · {localAgent.path}</span>}</span>
-                  : <span className="text-secondary">Claude Code not found — install it and run <span className="font-mono">claude</span> once to sign in, then check again.</span>}
-            </span>
-            <button
-              onClick={detect}
-              disabled={checking}
-              className="flex-shrink-0 rounded-sm px-1.5 py-0.5 text-accent hover:bg-accent/10 disabled:opacity-40 transition-colors"
-            >
-              {checking ? 'Checking…' : 'Check again'}
-            </button>
+        <div className="settings-field">
+          <span className="settings-label">Local agent</span>
+          <div className="min-w-0 space-y-2">
+            <div className="flex items-center justify-between gap-2 text-xs">
+              <span className="text-secondary">{localAgent === undefined ? 'Checking…' : localAgent.present ? 'Claude Code detected' : 'Not found'}</span>
+              <button onClick={detect} disabled={checking} className="shrink-0 rounded px-1 py-1 text-muted hover:bg-bg-secondary hover:text-primary disabled:opacity-40">{checking ? 'Checking…' : 'Recheck'}</button>
+            </div>
+            {localAgent?.path && <p className="break-all font-mono text-meta text-muted">{localAgent.path}</p>}
+            <p className="settings-help">{localAgent && !localAgent.present
+              ? 'Install Claude Code and run claude to sign in. You can save now and connect later.'
+              : 'Uses your Claude Code login. No API key needed.'}</p>
           </div>
-          <p className="text-xs text-muted">
-            Uses your own installed, authenticated Claude Code — no API key, and queries run through
-            the agent you already have. Subject to your agreement with Anthropic.
-          </p>
-          {localAgent && !localAgent.present && (
-            <p className="text-xs text-muted">
-              You can still save this provider — justdb looks for the CLI again on every request.
-            </p>
-          )}
         </div>
       ) : (
-        <div className="space-y-1.5">
-          <label htmlFor="ai-api-key" className="block text-sm font-medium text-secondary">API key</label>
-          <Input
-            id="ai-api-key"
-            type="password"
-            withPasswordToggle
-            value={apiKey}
-            onChange={(value) => { setApiKey(value); setSaved(false); }}
-            onKeyDown={(e) => { if (e.key === 'Enter') void save(); }}
-            placeholder={sameProvider ? 'Saved in OS keychain' : meta.keyPlaceholder}
-            containerClassName="w-full"
-            className="font-mono"
-          />
-          {sameProvider && <p className="text-xs text-muted">A key is saved. Paste a new one to replace it.</p>}
-        </div>
-      )}
-      <div className="flex items-center justify-between gap-3">
-        <Button
-          onClick={() => void save()}
-          disabled={busy || !canSave}
-        >
-          Save changes
-        </Button>
-        {status?.configured && (
-          <button
-            type="button"
-            onClick={() => setRemoveConfirm(true)}
-            disabled={busy}
-            className="inline-flex min-h-9 items-center gap-2 rounded-md px-2 text-xs font-medium text-danger hover:bg-danger/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent disabled:opacity-50"
-          >
-            <Trash2 className="size-4" strokeWidth={1.5} aria-hidden="true" />
-            {isLocal ? 'Disconnect' : 'Remove key'}
-          </button>
-        )}
-      </div>
-      {saved && <span className="inline-flex items-center gap-1 text-xs text-success"><Check className="size-3.5" />Saved</span>}
-      {error && <p className="text-xs text-danger" role="alert">{error}</p>}
-      <div className={`rounded-xl border border-dashed border-border bg-bg-secondary/20 p-4 ${docked ? 'mt-auto' : ''}`}>
-        <div className="flex items-start gap-3">
-          <LockKeyhole className="mt-0.5 size-4 shrink-0 text-secondary" strokeWidth={1.5} aria-hidden="true" />
-          <div className="space-y-2 text-xs leading-relaxed text-secondary">
-            <p><strong className="text-primary">AI is opt-in.</strong> {isLocal
-              ? 'The local agent runs on your machine using your own login. No key is stored.'
-              : 'Keys are stored in the OS keychain and only leave your machine on requests you make.'}</p>
-            <p>Used by the SQL editor’s Generate bar and AI mode.</p>
+        <div className="settings-field">
+          <label htmlFor="ai-api-key" className="settings-label">API key</label>
+          <div className="min-w-0 space-y-1.5">
+            <Input id="ai-api-key" type="password" withPasswordToggle value={apiKey}
+              onChange={value => { setApiKey(value); setSaved(false); }}
+              onKeyDown={e => { if (e.key === 'Enter') void save(); }}
+              placeholder={sameProvider ? 'Saved in OS keychain' : meta.keyPlaceholder} containerClassName="w-full" className="font-mono" />
+            <p className="settings-help">{sameProvider ? 'A key is saved. Enter a new key to replace it.' : 'Stored securely in your OS keychain.'}</p>
           </div>
         </div>
+      )}
+      <div className="flex items-center justify-between gap-3 border-t border-border py-4">
+        <div className="text-xs text-muted" aria-live="polite">
+          {saved ? <span className="inline-flex items-center gap-1"><Check className="size-3" />Saved</span> : hasChanges ? 'Unsaved changes' : 'Up to date'}
+        </div>
+        <Button size="sm" variant={canSave ? 'primary' : 'secondary'} isLoading={busy} onClick={() => void save()} disabled={busy || !canSave}>Save changes</Button>
       </div>
+      {error && <p className="mb-3 text-xs text-danger" role="alert">{error}</p>}
+      <details className="border-t border-border py-3 text-xs text-muted">
+        <summary className="w-fit cursor-pointer rounded py-1 hover:text-primary">How AI uses your data</summary>
+        <p className="mt-2 leading-relaxed">AI is opt-in. {isLocal
+          ? 'Requests use your locally installed Claude Code and its signed-in account, subject to your agreement with Anthropic. No API key is stored by JustDB.'
+          : 'Keys are stored in the OS keychain and used only for requests you make.'}</p>
+      </details>
+      {status?.configured && (
+        <div className="flex items-center justify-between gap-3 border-t border-border py-3">
+          <span className="text-xs text-muted">{configuredProvider?.local ? 'Local agent connection' : 'Saved credential'}</span>
+          <button type="button" onClick={() => setRemoveConfirm(true)} disabled={busy}
+            className="rounded px-2 py-1.5 text-xs text-muted hover:bg-danger/10 hover:text-danger disabled:opacity-40">
+            {configuredProvider?.local ? 'Disconnect' : 'Remove key'}
+          </button>
+        </div>
+      )}
       <ConfirmDialog
         isOpen={removeConfirm}
-        onConfirm={() => void remove()}
+        onConfirm={remove}
         onCancel={() => setRemoveConfirm(false)}
         title={isLocal ? 'Disconnect local agent' : 'Remove AI key'}
         message={isLocal
@@ -384,12 +369,12 @@ const AppearanceSection: React.FC = () => {
   const { appearance, setAppearance } = useTheme();
   return (
     <div className="space-y-4">
-      <p className="text-sm text-secondary">White in light mode. Matte black in dark mode.</p>
-      <div role="group" aria-label="Appearance mode" className="inline-flex border border-border rounded-md overflow-hidden">
+
+      <div role="group" aria-label="Appearance mode" className="grid grid-cols-3 gap-1 rounded-md bg-bg-secondary p-1">
         {(['system', 'light', 'dark'] as const).map(value => (
           <button key={value} type="button" aria-pressed={appearance === value}
             onClick={() => setAppearance(value)}
-            className={`px-4 py-2 text-sm capitalize transition-colors ${appearance === value ? 'bg-accent text-[rgb(var(--accent-text))]' : 'text-secondary hover:bg-bg-secondary'}`}>
+            className={`rounded px-3 py-1.5 text-xs capitalize transition-colors ${appearance === value ? 'bg-bg text-primary shadow-sm' : 'text-secondary hover:bg-bg-secondary'}`}>
             {value}
           </button>
         ))}
@@ -404,6 +389,7 @@ const AppearanceSection: React.FC = () => {
 const clamp = (n: number, min: number, max: number) => Math.min(max, Math.max(min, n));
 
 const DataSection: React.FC = () => {
+  const [experience, setExperience] = useState<ExperienceMode>(getExperienceMode);
   const [rowCap, setRowCap] = useState(String(getResultRowCap()));
   const [idleMin, setIdleMin] = useState(String(getIdleTimeoutMin()));
   const [lineNumbers, setLineNumbers] = useState(getEditorLineNumbers());
@@ -434,9 +420,16 @@ const DataSection: React.FC = () => {
     'w-32 px-2 py-1.5 text-sm border border-border rounded-md bg-bg text-primary focus:outline-hidden focus:ring-2 focus:ring-accent';
 
   return (
-    <div className="space-y-4 px-4">
-      <div className="flex items-center justify-between">
-        <label className="text-xs font-medium text-secondary">Show line numbers in the SQL editor</label>
+    <div className="space-y-4">
+      <div className="space-y-2 border-b border-border pb-4">
+        <p className="text-sm text-primary">Experience mode</p>
+        <div className="grid grid-cols-2 gap-1 rounded-md bg-bg-secondary p-1" role="group" aria-label="Experience mode">
+          {(['guided', 'expert'] as const).map(mode => <button key={mode} type="button" aria-pressed={experience === mode} onClick={() => { setExperience(mode); setExperienceMode(mode); }} className={`rounded px-3 py-2 text-xs capitalize ${experience === mode ? 'bg-bg text-primary' : 'text-muted hover:text-primary'}`}>{mode}</button>)}
+        </div>
+        <p className="text-xs leading-relaxed text-muted">{experience === 'guided' ? 'Review changes before running write and destructive queries.' : 'Run queries directly, without confirmation prompts.'} Transactions are available in both modes.</p>
+      </div>
+      <div className="flex items-center justify-between gap-3 border-b border-border pb-4">
+        <span className="text-xs text-secondary">Editor line numbers</span>
         <Switch
           checked={lineNumbers}
           onChange={toggleLineNumbers}
@@ -444,9 +437,11 @@ const DataSection: React.FC = () => {
           aria-label="Show line numbers"
         />
       </div>
-      <div className="space-y-1.5">
-        <label className="block text-xs font-medium text-secondary">SQL editor result limit</label>
+      <div className="settings-field">
+        <label htmlFor="settings-row-limit" className="settings-label">Row limit</label>
+        <div className="space-y-1.5">
         <Input
+          id="settings-row-limit"
           inputMode="numeric"
           value={rowCap}
           onChange={(v) => setRowCap(v.replace(/[^0-9]/g, ''))}
@@ -458,10 +453,13 @@ const DataSection: React.FC = () => {
           Max rows rendered before truncating (default {DEFAULT_ROW_CAP}, range 10–5000). Add an
           explicit LIMIT for more. Applies to the next query.
         </p>
+        </div>
       </div>
-      <div className="space-y-1.5">
-        <label className="block text-xs font-medium text-secondary">Idle disconnect (minutes)</label>
+      <div className="settings-field">
+        <label htmlFor="settings-idle-timeout" className="settings-label">Disconnect</label>
+        <div className="space-y-1.5">
         <Input
+          id="settings-idle-timeout"
           inputMode="numeric"
           value={idleMin}
           onChange={(v) => setIdleMin(v.replace(/[^0-9]/g, ''))}
@@ -470,9 +468,10 @@ const DataSection: React.FC = () => {
           className={numberInput}
         />
         <p className="text-xs text-muted">
-          Auto-disconnect after this much inactivity (default {DEFAULT_IDLE_MIN}, range 1–1440).
+          Minutes of inactivity before disconnecting (default {DEFAULT_IDLE_MIN}, range 1–1440).
           Applies to the next connection.
         </p>
+        </div>
       </div>
     </div>
   );
@@ -492,7 +491,7 @@ const PrivacySection: React.FC = () => {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-4">
-        <label className="text-xs font-medium text-secondary">Send anonymous usage analytics</label>
+        <label className="text-sm font-medium text-secondary">Send anonymous usage analytics</label>
         <Switch
           checked={enabled}
           onChange={toggle}

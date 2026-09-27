@@ -1,3 +1,4 @@
+import { getExperienceMode } from '@/lib/app-settings';
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Modal } from './ui/modal';
@@ -37,7 +38,8 @@ export const ReviewSqlModal: React.FC<ReviewSqlModalProps> = ({
   schema,
   table,
 }) => {
-  const { databaseType } = useConnection();
+  const expert = getExperienceMode() === 'expert';
+  const { databaseType, databaseName } = useConnection();
   const { addToast } = useToast();
   const pending = usePendingChanges();
   const { refreshTableData } = useDashboardActions();
@@ -53,6 +55,11 @@ export const ReviewSqlModal: React.FC<ReviewSqlModalProps> = ({
     () => (isOpen ? pending.buildMutationRequests({ schema, table }) : []),
     [isOpen, pending, schema, table]
   );
+
+  const previews = requests.map(request => buildDisplaySQL(request, databaseType));
+  const previewFailed = previews.some(sql => sql === '-- Unable to generate preview --');
+  const [saveError, setSaveError] = useState<string | null>(null);
+  useEffect(() => { if (isOpen) setSaveError(null); }, [isOpen]);
 
   const counts = useMemo(() => {
     const result = { INSERT: 0, UPDATE: 0, DELETE: 0 };
@@ -116,7 +123,7 @@ export const ReviewSqlModal: React.FC<ReviewSqlModalProps> = ({
       setAcknowledged(false);
       return;
     }
-    if (cascadeNodes.length === 0) {
+    if (expert || cascadeNodes.length === 0) {
       setCascadeResult(null);
       setCascadeError(null);
       return;
@@ -124,26 +131,27 @@ export const ReviewSqlModal: React.FC<ReviewSqlModalProps> = ({
     setExtendedAttempted(false);
     setAcknowledged(false);
     runCascade(false);
-  }, [isOpen, cascadeNodes, runCascade]);
+  }, [isOpen, cascadeNodes, runCascade, expert]);
 
   const hasCascadeImpact =
     !!cascadeResult &&
     (cascadeResult.cascade.length > 0 ||
       cascadeResult.setNull.length > 0 ||
       cascadeResult.blocked.length > 0 ||
-      cascadeResult.truncated);
+      cascadeResult.truncated || cascadeResult.warnings.length > 0);
 
-  const requiresAck = hasCascadeImpact || !!cascadeError;
+  const requiresAck = !expert && (hasCascadeImpact || !!cascadeError);
 
   const handleSave = async () => {
     if (requests.length === 0) {
       onClose();
       return;
     }
-    if (cascadeLoading) return;
+    if (isSaving || cascadeLoading || previewFailed) return;
     if (requiresAck && !acknowledged) return;
 
     setIsSaving(true);
+    setSaveError(null);
     try {
       await db.mutateBatch(requests);
       pending.clearAfterSave({ schema, table });
@@ -154,16 +162,17 @@ export const ReviewSqlModal: React.FC<ReviewSqlModalProps> = ({
       );
       onClose();
     } catch (err: any) {
-      addToast(err.message || 'Save failed — all changes rolled back', 'error');
+      setSaveError(err.message || 'Save failed — all changes rolled back');
     } finally {
       setIsSaving(false);
     }
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Review SQL" preventClose={isSaving}>
-      <div className="space-y-3">
-        <div className="flex items-center gap-3 text-xs text-secondary">
+    <Modal isOpen={isOpen} onClose={onClose} title="Review changes" width={720} preventClose={isSaving}>
+      <div className="space-y-4">
+        <p className="text-sm text-secondary">{databaseName} <span aria-hidden> / </span> <strong className="font-medium text-primary">{schema}.{table}</strong></p>
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-secondary">
           <span>{requests.length} statement{requests.length === 1 ? '' : 's'}</span>
           {counts.INSERT > 0 && (
             <span className="text-success">{counts.INSERT} insert{counts.INSERT === 1 ? '' : 's'}</span>
@@ -174,10 +183,10 @@ export const ReviewSqlModal: React.FC<ReviewSqlModalProps> = ({
           {counts.DELETE > 0 && (
             <span className="text-danger">{counts.DELETE} delete{counts.DELETE === 1 ? '' : 's'}</span>
           )}
-          <span className="text-muted ml-auto">runs in a single transaction</span>
+          <span className="text-muted">runs in a single transaction</span>
         </div>
 
-        {deleteRequests.length > 0 && (
+        {!expert && deleteRequests.length > 0 && (
           <CascadeImpactPanel
             loading={cascadeLoading}
             error={cascadeError}
@@ -188,6 +197,8 @@ export const ReviewSqlModal: React.FC<ReviewSqlModalProps> = ({
           />
         )}
 
+        {previewFailed && <p role="alert" className="rounded-md border border-danger/30 bg-danger/5 p-3 text-sm text-danger">SQL preview unavailable. Complete or correct the staged rows before saving.</p>}
+        {saveError && <p role="alert" className="text-sm text-danger">{saveError}</p>}
         <div className="border border-border rounded-md overflow-hidden">
           <div className="max-h-[40vh] overflow-y-auto divide-y divide-border">
             {requests.length === 0 ? (
@@ -196,9 +207,9 @@ export const ReviewSqlModal: React.FC<ReviewSqlModalProps> = ({
               requests.map((r, i) => (
                 <pre
                   key={i}
-                  className="p-3 text-xs font-mono whitespace-pre-wrap break-all bg-bg-secondary/30"
+                  className="p-4 text-sm font-mono whitespace-pre-wrap break-all bg-bg-secondary/30"
                 >
-                  <span className={typeColor[r.type]}>{buildDisplaySQL(r, databaseType)};</span>
+                  <span className={previews[i] === '-- Unable to generate preview --' ? 'text-danger' : typeColor[r.type]}>{previews[i]};</span>
                 </pre>
               ))
             )}
@@ -212,7 +223,7 @@ export const ReviewSqlModal: React.FC<ReviewSqlModalProps> = ({
               onChange={(checked) => setAcknowledged(checked === true)}
               disabled={isSaving}
               label={
-                <span className="text-xs text-secondary">
+                <span className="text-sm text-secondary">
                   I’ve reviewed the impact above and want to proceed.
                 </span>
               }
@@ -220,23 +231,24 @@ export const ReviewSqlModal: React.FC<ReviewSqlModalProps> = ({
           </div>
         )}
 
-        <div className="flex gap-2 justify-end">
-          <Button variant="secondary" size="sm" onClick={onClose} disabled={isSaving}>
+        <div className="modal-actions">
+          <Button data-modal-autofocus variant="secondary" size="sm" onClick={onClose} disabled={isSaving}>
             Cancel
           </Button>
           <Button
-            variant="primary"
+            variant={!expert && counts.DELETE > 0 ? "danger" : "primary"}
             size="sm"
             onClick={handleSave}
             isLoading={isSaving}
             disabled={
               isSaving ||
               requests.length === 0 ||
+              previewFailed ||
               cascadeLoading ||
               (requiresAck && !acknowledged)
             }
           >
-            Save {requests.length > 0 ? `(${requests.length})` : ''}
+            Save {requests.length} {requests.length === 1 ? 'change' : 'changes'}
           </Button>
         </div>
       </div>

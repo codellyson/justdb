@@ -87,16 +87,16 @@ export const RelationshipDisplay: React.FC<RelationshipDisplayProps> = ({
               {indexes.map((idx, i) => (
                 <div key={i} className="flex items-center gap-2 text-sm text-primary flex-wrap">
                   <span className="font-mono font-medium">{idx.index_name}</span>
-                  <span className="text-[10px] px-1.5 py-0.5 rounded-sm bg-bg-secondary text-secondary border border-border">
+                  <span className="text-meta px-1.5 py-0.5 rounded-sm bg-bg-secondary text-secondary border border-border">
                     {idx.index_type}
                   </span>
                   {idx.is_primary && (
-                    <span className="text-[10px] px-1.5 py-0.5 rounded-sm bg-accent/10 text-accent font-medium">
+                    <span className="text-meta px-1.5 py-0.5 rounded-sm bg-accent/10 text-accent font-medium">
                       PK
                     </span>
                   )}
                   {idx.is_unique && !idx.is_primary && (
-                    <span className="text-[10px] px-1.5 py-0.5 rounded-sm bg-accent/10 text-accent font-medium">
+                    <span className="text-meta px-1.5 py-0.5 rounded-sm bg-accent/10 text-accent font-medium">
                       Unique
                     </span>
                   )}

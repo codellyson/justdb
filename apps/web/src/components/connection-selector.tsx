@@ -65,10 +65,10 @@ export const ConnectionSelector: React.FC<ConnectionSelectorProps> = ({
     setDeleteTarget(connectionId);
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (deleteTarget) {
-      deleteConnection(deleteTarget);
-      addToast('Connection deleted', 'info');
+      await deleteConnection(deleteTarget);
+      addToast('Saved connection removed', 'info');
       setDeleteTarget(null);
     }
   };
@@ -117,7 +117,7 @@ export const ConnectionSelector: React.FC<ConnectionSelectorProps> = ({
                     {databaseName ?? label}
                   </span>
                 </div>
-                <p className="text-[11px] text-muted mt-1">
+                <p className="text-xs text-muted mt-1">
                   {tableCount !== undefined && tableCount > 0 && (
                     <>{tableCount} {tableCount === 1 ? 'table' : 'tables'}</>
                   )}
@@ -192,9 +192,9 @@ export const ConnectionSelector: React.FC<ConnectionSelectorProps> = ({
         isOpen={deleteTarget !== null}
         onConfirm={confirmDelete}
         onCancel={() => setDeleteTarget(null)}
-        title="Delete connection"
-        message="Are you sure you want to delete this connection?"
-        confirmText="Delete"
+        title="Remove saved connection?"
+        message={`Remove “${savedConnections.find(c => c.id === deleteTarget)?.name ?? 'this connection'}” from your saved connections? Its saved connection details will be removed. The database and its data will not be deleted.`}
+        confirmText="Remove connection"
         variant="danger"
       />
     </div>

@@ -24,7 +24,8 @@ export function splitSqlStatements(sql: string): Statement[] {
   let inSingle = false;
   let inDouble = false;
   let inLineComment = false;
-  let inBlockComment = false;
+  let blockDepth = 0;
+  let identifierEnd: string | null = null;
   // null when not in a dollar quote; otherwise the literal opening tag,
   // including surrounding `$` (e.g. "$$" or "$body$"). The closing tag is
   // identical text.
@@ -39,9 +40,10 @@ export function splitSqlStatements(sql: string): Statement[] {
       i++;
       continue;
     }
-    if (inBlockComment) {
+    if (blockDepth) {
+      if (ch === '/' && next === '*') { blockDepth++; i += 2; continue; }
       if (ch === '*' && next === '/') {
-        inBlockComment = false;
+        blockDepth--;
         i += 2;
         continue;
       }
@@ -84,14 +86,26 @@ export function splitSqlStatements(sql: string): Statement[] {
       continue;
     }
 
+    if (identifierEnd) {
+      if (ch === identifierEnd && next === identifierEnd) { i += 2; continue; }
+      if (ch === identifierEnd) identifierEnd = null;
+      i++;
+      continue;
+    }
+
     // Top-level
+    if (ch === '`' || ch === '[') {
+      identifierEnd = ch === '[' ? ']' : '`';
+      i++;
+      continue;
+    }
     if (ch === '-' && next === '-') {
       inLineComment = true;
       i += 2;
       continue;
     }
     if (ch === '/' && next === '*') {
-      inBlockComment = true;
+      blockDepth = 1;
       i += 2;
       continue;
     }

@@ -291,7 +291,9 @@ export const EditableCell = memo(function EditableCell({
         createPortal(
           <div
             ref={popoverRef}
-            className="fixed z-50 bg-bg border border-border rounded-md shadow-xl flex flex-col overflow-hidden"
+            role="dialog"
+            aria-label={`Edit ${column}`}
+            className="cell-editor floating-surface fixed z-50 bg-bg border border-border rounded-xl flex flex-col overflow-hidden"
             style={{
               top: position.top,
               left: position.left,
@@ -312,10 +314,10 @@ export const EditableCell = memo(function EditableCell({
               <div className="flex items-center gap-1.5 min-w-0">
                 <span className="text-xs font-medium text-primary truncate">{column}</span>
                 {columnType && (
-                  <span className="text-[10px] font-mono text-muted flex-shrink-0">{columnType}</span>
+                  <span className="text-meta font-mono text-muted flex-shrink-0">{columnType}</span>
                 )}
               </div>
-              <div className="flex items-center gap-1 text-[10px] text-muted flex-shrink-0">
+              <div className="flex items-center gap-1 text-meta text-muted flex-shrink-0">
                 <kbd className="px-1 py-0.5 bg-bg rounded-sm border border-border">
                   {isLargeEditor
                     ? (typeof navigator !== 'undefined' && navigator.platform?.includes('Mac') ? '⌘' : 'Ctrl') + '+Enter'
@@ -372,7 +374,7 @@ export const EditableCell = memo(function EditableCell({
                         setEditValue(crypto.randomUUID());
                       }
                     }}
-                    className="px-2 py-1.5 text-[11px] font-medium text-secondary hover:text-primary border border-border rounded-sm hover:bg-bg-secondary transition-colors flex-shrink-0"
+                    className="px-2 py-1.5 text-meta font-medium text-secondary hover:text-primary border border-border rounded-sm hover:bg-bg-secondary transition-colors flex-shrink-0"
                     title="Generate a new UUID"
                   >
                     Generate
@@ -399,7 +401,7 @@ export const EditableCell = memo(function EditableCell({
                 />
               )}
               {jsonError && (
-                <p className="text-[11px] text-danger mt-1.5">{jsonError}</p>
+                <p className="text-xs text-danger mt-1.5">{jsonError}</p>
               )}
             </div>
 
@@ -408,7 +410,7 @@ export const EditableCell = memo(function EditableCell({
               <button
                 type="button"
                 onClick={setNull}
-                className="text-[11px] text-muted hover:text-primary transition-colors px-1.5 py-0.5"
+                className="text-meta text-muted hover:text-primary transition-colors px-1.5 py-0.5"
                 title="Set this cell to NULL"
               >
                 Set NULL
@@ -417,14 +419,14 @@ export const EditableCell = memo(function EditableCell({
                 <button
                   type="button"
                   onClick={onCancel}
-                  className="px-2.5 py-1 text-[11px] font-medium text-secondary hover:text-primary hover:bg-bg-secondary rounded-sm transition-colors"
+                  className="px-2.5 py-1 text-meta font-medium text-secondary hover:text-primary hover:bg-bg-secondary rounded-sm transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="button"
                   onClick={() => save()}
-                  className="px-2.5 py-1 text-[11px] font-medium text-[rgb(var(--accent-text))] bg-accent hover:bg-accent-hover rounded-sm transition-colors"
+                  className="px-2.5 py-1 text-meta font-medium text-[rgb(var(--accent-text))] bg-accent hover:bg-accent-hover rounded-sm transition-colors"
                 >
                   Save
                 </button>

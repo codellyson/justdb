@@ -41,16 +41,16 @@ function ToastItem({
       className={`
         flex items-center gap-3
         bg-bg border border-border border-l-4 ${style.bg}
-        rounded-lg px-4 py-3 text-sm text-primary shadow-md
-        transition-all duration-150 ease-out
-        ${isVisible ? "translate-x-0 opacity-100" : "translate-x-full opacity-0"}
+        floating-surface rounded-xl pl-4 pr-2 py-2 text-sm text-primary
+        transition-[opacity,translate] duration-150 ease-out
+        ${isVisible ? "translate-y-0 opacity-100" : "translate-y-2 opacity-0"}
       `}
     >
       <style.Icon className={`h-4 w-4 flex-shrink-0 ${style.tone}`} />
-      <span className="flex-1 truncate">{message}</span>
+      <span className="min-w-0 flex-1 break-words">{message}</span>
       <button
         onClick={handleRemove}
-        className="flex-shrink-0 text-muted hover:text-primary transition-colors focus:outline-hidden"
+        className="flex size-8 items-center justify-center rounded-lg flex-shrink-0 text-muted hover:bg-bg-secondary hover:text-primary transition-colors"
         aria-label="Dismiss notification"
       >
         <X className="h-4 w-4" />
