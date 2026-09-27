@@ -674,7 +674,7 @@ export const ConnectionForm: React.FC<ConnectionFormProps> = ({
                 type="text"
                 value={connectionName}
                 onChange={setConnectionName}
-                placeholder="e.g. Khaime Staging"
+                placeholder="e.g. Staging database"
                 error={errors.connectionName}
                 disabled={isConnecting}
               />
