@@ -46,7 +46,7 @@ const downloads = await resolveDownloads();
         <p class="intro">Browse PostgreSQL, SQLite, and Turso. Run SQL, follow relationships, and review edits before saving — all from your desktop.</p>
         <div class="hero-actions">
           <a class="button" id="cta-download" href={downloadUrl} data-download-macos={downloads.macos} data-download-windows={downloads.windows} data-download-linux={downloads.linux}>Download JustDB</a>
-          <a class="button secondary" href={LAUNCH_URL} data-fallback={downloadUrl}>Open the app <span aria-hidden="true">↗</span></a>
+          <a class="button secondary" href={LAUNCH_URL} title="Open the installed JustDB desktop app">Open the app <span aria-hidden="true">↗</span></a>
         </div>
         <p class="availability">Free · macOS & Windows · No account needed</p>
         <div class="brew-install">
@@ -101,7 +101,7 @@ const downloads = await resolveDownloads();
       <section class="closing">
         <div class="closing-card">
           <h2>Get straight<br />to <span class="accent">your data.</span></h2>
-          <div class="closing-actions"><a class="button" href={LAUNCH_URL} data-fallback={downloadUrl}>Open JustDB</a><a class="quiet-link" href={downloadUrl}>or download the app</a></div>
+          <div class="closing-actions"><a class="button" href={LAUNCH_URL} title="Open the installed JustDB desktop app">Open JustDB</a><a class="quiet-link" href={downloadUrl}>or download the app</a></div>
           <p class="availability">Free, on your desktop. No account needed to start.</p>
         </div>
       </section>
@@ -240,13 +240,8 @@ const downloads = await resolveDownloads();
 </style>
 
 <script>
-  // ── Download / launch CTAs ───────────────────────────────────────────────
-  //
-  // "Open JustDB" points at `justdb://open`, so a native click hands the URL to
-  // the OS and an installed app launches with no JS involved. If nothing is
-  // registered, the tab stays visible — after ~1.5s we send them to the best
-  // download we have. Mobile has no desktop app to launch, so the href is
-  // swapped up-front.
+  // Detect the platform only to label the explicit download link.
+  // Launch links never redirect to or automatically download an installer.
   type OS = 'macos' | 'windows' | 'linux';
 
   function detectOS(): OS | null {
@@ -261,7 +256,6 @@ const downloads = await resolveDownloads();
   }
 
   const os = detectOS();
-  const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
   const osLabel: Record<OS, string> = {
     macos: 'Download for macOS',
     windows: 'Download for Windows',
@@ -269,9 +263,8 @@ const downloads = await resolveDownloads();
   };
 
   const download = document.getElementById('cta-download');
-  let osDownloadUrl: string | undefined;
   if (download instanceof HTMLAnchorElement && os) {
-    osDownloadUrl = download.dataset[
+    const osDownloadUrl = download.dataset[
       os === 'macos' ? 'downloadMacos' : os === 'windows' ? 'downloadWindows' : 'downloadLinux'
     ];
     if (osDownloadUrl) {
@@ -280,22 +273,6 @@ const downloads = await resolveDownloads();
     }
   }
 
-  for (const el of document.querySelectorAll<HTMLAnchorElement>('a[data-fallback]')) {
-    const fallback = osDownloadUrl ?? el.dataset.fallback;
-    if (!fallback) continue;
-    if (isMobile) {
-      el.href = fallback;
-      continue;
-    }
-    el.addEventListener('click', () => {
-      window.setTimeout(() => {
-        if (!document.hidden) window.location.href = fallback;
-      }, 1500);
-    });
-  }
-
-
-  const landing = document.getElementById('landing');
   document.getElementById('copy-brew')?.addEventListener('click', async () => {
     const command = document.getElementById('brew-command')?.textContent;
     const feedback = document.getElementById('brew-feedback');

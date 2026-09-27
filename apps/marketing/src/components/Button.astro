@@ -11,7 +11,7 @@ interface Props {
   class?: string;
   id?: string;
   // Anything else (e.g. data-* attributes) is forwarded to the rendered
-  // element. Used by index.astro to attach `data-fallback` on the launch CTA.
+  // element, including descriptive titles and accessibility attributes.
   [key: `data-${string}`]: string | undefined;
 }
 

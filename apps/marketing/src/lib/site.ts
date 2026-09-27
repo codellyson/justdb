@@ -13,8 +13,7 @@ export const ORG_URL = 'https://kreativekorna.com';
 
 // The "Open JustDB" CTA points at the `justdb://` scheme registered by the
 // Tauri build (see src-tauri/tauri.conf.json → plugins.deep-link), so the
-// visible action matches the intent. index.astro's client script falls back to
-// a download when nothing handles it.
+// visible action matches the intent. Downloads require their own explicit click.
 export const LAUNCH_URL = 'justdb://open';
 
 /**

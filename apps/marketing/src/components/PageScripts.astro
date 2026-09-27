@@ -1,30 +1,8 @@
 ---
-// Shared client behaviour for sub-pages: the justdb:// launch fallback and the
-// scroll-reveal animation. The homepage keeps its own richer version (with
-// build-time OS download detection); this is the trimmed variant everything
-// else uses. Include once per page, near the end of <body>.
+// Shared scroll-reveal animation for marketing sub-pages.
 ---
 
 <script>
-  // ── Launch CTAs ──────────────────────────────────────────────────────────
-  // "Open JustDB" points at justdb://open. If nothing handles the scheme the
-  // tab stays put, so after ~1.5s fall back to the download page. Mobile has no
-  // app to launch, so swap the href up-front.
-  const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-  for (const el of document.querySelectorAll<HTMLAnchorElement>('a[data-fallback]')) {
-    const fallback = el.dataset.fallback;
-    if (!fallback) continue;
-    if (isMobile) {
-      el.href = fallback;
-      continue;
-    }
-    el.addEventListener('click', () => {
-      window.setTimeout(() => {
-        if (!document.hidden) window.location.href = fallback;
-      }, 1500);
-    });
-  }
-
   // ── Scroll reveal ────────────────────────────────────────────────────────
   const targets = document.querySelectorAll('[data-reveal]');
   if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
