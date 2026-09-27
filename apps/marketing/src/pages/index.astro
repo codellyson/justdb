@@ -73,14 +73,13 @@ const downloads = await resolveDownloads();
         <div class="section-intro"><h2>Less setup.<br />More understanding.</h2><p>From the first connection to the next query,<br class="desktop-break" /> everything stays close to your data.</p></div>
         <div class="feature-grid">
         {[
-          { title: 'Pick up where you left off.', body: 'Keep your saved connections together and discover PostgreSQL servers running on your machine. Choose a connection and get straight to your data.', image: 'connections', width: 560, height: 600, alt: 'Saved database connections and two locally detected PostgreSQL servers.', caption: 'Saved connections and local discovery, together.' },
-          { title: 'Make values easier to read.', body: 'Choose relative dates, pretty JSON, boolean badges, and comma-separated numbers. Control how values appear in your tables from the docked formatting settings.', image: 'formatting', width: 460, height: 690, alt: 'Formatting settings with controls for dates, JSON, booleans, numbers, and long text.', caption: 'Display preferences within reach of your workspace.' },
-          { title: 'Run more. Keep every result.', body: 'Run multiple SELECT statements together, or highlight just the queries you need. Each statement opens its own result tab so you can switch between counts and records.', image: 'query-results', width: 990, height: 570, alt: 'Two SELECT statements in the SQL editor with separate result tabs and sample user records.', caption: 'Multiple queries. Separate results. One editor.' },
+          { title: 'Your data, in the dark.', body: 'Browse tables, filter rows, and move between queries in a quiet dark workspace.', image: 'database-dark', alt: 'JustDB in dark mode showing the users table in the demo SQLite database.', caption: 'Dark mode · Demo SQLite database' },
+          { title: 'A lighter view.', body: 'The same tables, tools, and layout in light mode. Choose either appearance, or follow your system setting.', image: 'database-light', alt: 'JustDB in light mode showing the same users table and layout in the demo SQLite database.', caption: 'Light mode · Same database, same view' },
         ].map(feature => (
           <article class="feature-story">
             <div class="feature-copy"><h2>{feature.title}</h2><p>{feature.body}</p></div>
             <figure>
-              <div class="feature-image"><span class="feature-crop" style={`aspect-ratio:${feature.width}/${feature.height}`}><img src={`/features/${feature.image}-${feature.width}.webp`} srcset={`/features/${feature.image}-${feature.width / 2}.webp ${feature.width / 2}w, /features/${feature.image}-${feature.width}.webp ${feature.width}w`} sizes={feature.image === 'query-results' ? '(max-width: 760px) calc(100vw - 80px), (max-width: 1248px) calc(100vw - 112px), 990px' : '(max-width: 760px) calc(100vw - 80px), (max-width: 1248px) calc(50vw - 66px), 524px'} width={feature.width} height={feature.height} loading="lazy" decoding="async" alt={feature.alt} /></span></div>
+              <div class="feature-image"><span class="feature-crop"><img src={`/features/${feature.image}-1476.webp`} srcset={`/features/${feature.image}-738.webp 738w, /features/${feature.image}-1476.webp 1476w`} sizes="(max-width: 760px) calc(100vw - 96px), (max-width: 1248px) calc(66vw - 100px), 738px" width="1476" height="488" loading="lazy" decoding="async" alt={feature.alt} /></span></div>
               <figcaption>{feature.caption}</figcaption>
             </figure>
           </article>
@@ -168,16 +167,15 @@ const downloads = await resolveDownloads();
   .section-intro { margin-bottom:40px; }
   .section-intro h2,.statement h2 { font-size:clamp(30px,4vw,42px); line-height:1.15; font-weight:400; letter-spacing:0; }
   .section-intro>p:last-child { margin-top:20px; font-size:16px; line-height:1.6; color:rgb(var(--text-secondary)); }
-  .feature-grid { position:relative; isolation:isolate; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:20px; }
-  .feature-story:last-child { grid-column:1 / -1; }
-  .feature-story:last-child figure { max-width:990px; }
+  .feature-grid { position:relative; isolation:isolate; display:grid; grid-template-columns:1fr; gap:20px; }
+
   .feature-grid { align-items:start; }
   .feature-story {
     position:relative; z-index:1; border:1px solid rgb(255 255 255 / .16);
     border-radius:12px; background:rgb(18 18 18 / .28);
     backdrop-filter:blur(24px); -webkit-backdrop-filter:blur(24px);
     box-shadow:inset 0 1px 0 rgb(255 255 255 / .23), inset 1px 0 0 rgb(255 255 255 / .06), inset 0 -1px 0 rgb(255 255 255 / .04), 0 16px 40px -24px rgb(0 0 0 / .6);
-    padding:32px; display:flex; flex-direction:column; overflow:hidden;
+    padding:32px; display:grid; grid-template-columns:minmax(0,1fr) minmax(0,2fr); gap:32px; align-items:center; overflow:hidden;
   }
   /* These shapes sit behind the cards: sharp in the gaps, diffused through glass. */
   .feature-grid::before {
@@ -211,11 +209,10 @@ const downloads = await resolveDownloads();
   }
   .feature-copy h2 { font-size:24px; line-height:1.33; font-weight:400; margin-bottom:14px; }
   .feature-copy p { font-size:14px; line-height:1.65; color:rgb(var(--text-secondary)); }
-  .feature-story figure { min-width:0; margin:32px 0 0; width:100%; }
+  .feature-story figure { min-width:0; margin:0; width:100%; max-width:738px; }
   .feature-image { display:block; border:1px solid rgb(var(--border)); border-radius:6px; overflow:hidden; }
   .feature-crop { display:block; position:relative; overflow:hidden; }
   .feature-crop img { display:block; width:100%; height:auto; }
-  .feature-crop img { filter:grayscale(1); }
   .feature-story figcaption { margin-top:12px; font-size:12px; line-height:1.5; color:rgb(var(--text-muted)); }
   .statement { margin-top:96px; display:grid; grid-template-columns:1fr 1fr; gap:64px; padding-block:48px; border-top:1px solid rgb(var(--border)); border-bottom:1px solid rgb(var(--border)); }
   .statement p:not(.eyebrow) { font-size:16px; line-height:1.75; color:rgb(var(--text-secondary)); }
@@ -237,7 +234,7 @@ const downloads = await resolveDownloads();
   .footer-links h2 { margin-bottom:20px; }
   .footer-links a { display:block; margin-top:14px; font-size:13px; color:rgb(var(--text-secondary)); }
   .copyright { border-top:1px solid rgb(var(--border)); margin-top:48px; padding:24px 0; font-size:12px; color:rgb(var(--text-muted)); }
-  @media(max-width:760px) { .nav { gap:20px; }.nav-links { gap:16px; }.nav-links a:last-child { display:none; }.feature-grid,.statement { grid-template-columns:1fr; }.statement { gap:28px; }.feature-story { padding:24px; }.hero { padding-top:64px; }.compatibility { flex-direction:column; gap:16px; }.frame-label span:last-child { display:none; }.feature-stories,.statement,.faq,.closing { margin-top:64px; } }
+  @media(max-width:760px) { .nav { gap:20px; }.nav-links { gap:16px; }.nav-links a:last-child { display:none; }.feature-grid,.statement { grid-template-columns:1fr; }.statement { gap:28px; }.feature-story { padding:24px; grid-template-columns:1fr; }.hero { padding-top:64px; }.compatibility { flex-direction:column; gap:16px; }.frame-label span:last-child { display:none; }.feature-stories,.statement,.faq,.closing { margin-top:64px; } }
   @media(max-width:480px) { .nav-links { display:none; }.nav { gap:12px; }.nav-actions { gap:8px; }.shell { padding-inline:16px; }.hero { padding-inline:20px; } h1 { font-size:44px; }.intro { font-size:16px; }.feature-story { padding:20px; }.footer-links { gap:60px; }.closing-actions { flex-direction:column; gap:16px; }.desktop-break { display:none; } }
   @media(prefers-reduced-motion:reduce) { .landing a,.landing button { transition:none; } }
 </style>

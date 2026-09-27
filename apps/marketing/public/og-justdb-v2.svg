@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <rect width="1200" height="630" fill="#111111"/>
+  <rect x="24" y="24" width="1152" height="582" rx="20" fill="none" stroke="#303030"/>
+  <image href="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDIwMCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CiAgPCEtLSBPdXRlciBib3JkZXIgLS0+CiAgPHJlY3QgeD0iMTAiIHk9IjEwIiB3aWR0aD0iMTgwIiBoZWlnaHQ9IjE4MCIgc3Ryb2tlPSJibGFjayIgc3Ryb2tlLXdpZHRoPSI0IiBmaWxsPSJ3aGl0ZSIvPgogIAogIDwhLS0gSW5uZXIgZ3JpZCBzdHJ1Y3R1cmUgLSByZXByZXNlbnRpbmcgZGF0YWJhc2UgdGFibGVzIC0tPgogIDxyZWN0IHg9IjMwIiB5PSIzMCIgd2lkdGg9IjUwIiBoZWlnaHQ9IjUwIiBzdHJva2U9ImJsYWNrIiBzdHJva2Utd2lkdGg9IjMiIGZpbGw9IndoaXRlIi8+CiAgPHJlY3QgeD0iOTAiIHk9IjMwIiB3aWR0aD0iNTAiIGhlaWdodD0iNTAiIHN0cm9rZT0iYmxhY2siIHN0cm9rZS13aWR0aD0iMyIgZmlsbD0iYmxhY2siLz4KICA8cmVjdCB4PSIxNTAiIHk9IjMwIiB3aWR0aD0iMjAiIGhlaWdodD0iNTAiIHN0cm9rZT0iYmxhY2siIHN0cm9rZS13aWR0aD0iMyIgZmlsbD0id2hpdGUiLz4KICAKICA8cmVjdCB4PSIzMCIgeT0iOTAiIHdpZHRoPSI1MCIgaGVpZ2h0PSI1MCIgc3Ryb2tlPSJibGFjayIgc3Ryb2tlLXdpZHRoPSIzIiBmaWxsPSJibGFjayIvPgogIDxyZWN0IHg9IjkwIiB5PSI5MCIgd2lkdGg9IjUwIiBoZWlnaHQ9IjUwIiBzdHJva2U9ImJsYWNrIiBzdHJva2Utd2lkdGg9IjMiIGZpbGw9IndoaXRlIi8+CiAgPHJlY3QgeD0iMTUwIiB5PSI5MCIgd2lkdGg9IjIwIiBoZWlnaHQ9IjUwIiBzdHJva2U9ImJsYWNrIiBzdHJva2Utd2lkdGg9IjMiIGZpbGw9ImJsYWNrIi8+CiAgCiAgPHJlY3QgeD0iMzAiIHk9IjE1MCIgd2lkdGg9IjUwIiBoZWlnaHQ9IjIwIiBzdHJva2U9ImJsYWNrIiBzdHJva2Utd2lkdGg9IjMiIGZpbGw9IndoaXRlIi8+CiAgPHJlY3QgeD0iOTAiIHk9IjE1MCIgd2lkdGg9IjUwIiBoZWlnaHQ9IjIwIiBzdHJva2U9ImJsYWNrIiBzdHJva2Utd2lkdGg9IjMiIGZpbGw9ImJsYWNrIi8+CiAgPHJlY3QgeD0iMTUwIiB5PSIxNTAiIHdpZHRoPSIyMCIgaGVpZ2h0PSIyMCIgc3Ryb2tlPSJibGFjayIgc3Ryb2tlLXdpZHRoPSIzIiBmaWxsPSJ3aGl0ZSIvPgogIAogIDwhLS0gIkV5ZSIgZWxlbWVudCAtIHJlcHJlc2VudGluZyAidmlld2VyIiAtLT4KICA8Y2lyY2xlIGN4PSIxMDAiIGN5PSIxMDAiIHI9IjE1IiBzdHJva2U9ImJsYWNrIiBzdHJva2Utd2lkdGg9IjMiIGZpbGw9IndoaXRlIi8+CiAgPGNpcmNsZSBjeD0iMTAwIiBjeT0iMTAwIiByPSI2IiBmaWxsPSJibGFjayIvPgo8L3N2Zz4KCg==" x="68" y="66" width="56" height="56"/>
+  <g font-family="Helvetica, Arial, sans-serif">
+    <text x="140" y="106" fill="#fafafa" font-size="36" font-weight="700">JustDB</text>
+    <text x="72" y="270" fill="#fafafa" font-size="88" font-weight="700" letter-spacing="-3">Just your data.</text>
+    <text x="72" y="370" fill="#a3a3a3" font-size="88" font-weight="700" letter-spacing="-3">No bullshit.</text>
+    <text x="76" y="435" fill="#c4c4c4" font-size="27">Browse. Query. Edit. Right from your desktop.</text>
+    <path d="M76 486H1124" stroke="#333333"/>
+    <text x="76" y="545" fill="#fafafa" font-size="24">PostgreSQL · SQLite · Turso</text>
+    <text x="1124" y="545" text-anchor="end" fill="#a3a3a3" font-size="23">Free. Local-first. No signup.</text>
+  </g>
+</svg>
