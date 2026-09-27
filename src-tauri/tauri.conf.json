@@ -1,7 +1,7 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "JustDB",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "identifier": "com.kreativekorna.justdb",
   "build": {
     "frontendDist": "../apps/web/dist",

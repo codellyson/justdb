@@ -4,6 +4,22 @@ All notable changes to JustDB are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning follows
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.4] - 2026-09-27
+
+### Added
+- Run multiple SQL statements and keep each result in its own tab.
+- Explain SQL keywords and common functions on hover, with keyboard-accessible statement guidance.
+- Inspect records alongside the table and enter WHERE filters directly from the toolbar.
+- Discover local databases and manage optional connectors from Settings.
+- Guided and Expert query execution modes, including destructive statements and transactions.
+
+### Improved
+- Refined workspace transitions, settings layout, connection discovery, and toolbar hierarchy.
+- Increased text readability and standardized default data-column widths.
+- Clearer destructive-action confirmations, safer focus handling, and dismissible AI errors.
+- More helpful filter errors for curly quotes and incorrectly quoted column names.
+- Updated marketing pages, screenshots, and a silent product demo video.
+
 ## [0.2.3] - 2026-08-17
 
 ### Added
