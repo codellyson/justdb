@@ -8,7 +8,7 @@ import {
   schemaCompletionSource,
 } from '@codemirror/lang-sql';
 import { LanguageSupport, syntaxTree } from '@codemirror/language';
-import { keymap, EditorView } from '@codemirror/view';
+import { keymap, EditorView, tooltips } from '@codemirror/view';
 import {
   acceptCompletion,
   completeFromList,
@@ -23,6 +23,8 @@ import {
   createBrutalistTheme,
   createBrutalistHighlight,
 } from '@/lib/codemirror-brutalist-theme';
+
+import { statementHover } from '@/lib/sql-hover';
 
 type SQLSchemaSpec = { [name: string]: SQLSchemaSpec | readonly string[] };
 
@@ -246,6 +248,7 @@ interface SqlEditorProps {
   defaultSchema?: string;
   editorRef?: React.MutableRefObject<EditorView | null>;
   onSelectionChange?: (hasSelection: boolean) => void;
+  onCursorChange?: (position: number) => void;
 }
 
 export const SqlEditor: React.FC<SqlEditorProps> = ({
@@ -257,6 +260,7 @@ export const SqlEditor: React.FC<SqlEditorProps> = ({
   defaultSchema,
   editorRef,
   onSelectionChange,
+  onCursorChange,
 }) => {
   const { mode } = useTheme();
   const { databaseType } = useConnection();
@@ -287,6 +291,8 @@ export const SqlEditor: React.FC<SqlEditorProps> = ({
   );
 
   // Hold the selection callback in a ref so extensions stay stable across renders.
+  const onCursorChangeRef = useRef(onCursorChange);
+  useEffect(() => { onCursorChangeRef.current = onCursorChange; }, [onCursorChange]);
   const onSelectionChangeRef = useRef(onSelectionChange);
   useEffect(() => { onSelectionChangeRef.current = onSelectionChange; }, [onSelectionChange]);
 
@@ -331,6 +337,8 @@ export const SqlEditor: React.FC<SqlEditorProps> = ({
       new LanguageSupport(sqlDialect.language, completion),
       createBrutalistTheme(isDark),
       createBrutalistHighlight(),
+      statementHover,
+      tooltips({ parent: document.body }),
       // Accept completion with Tab
       keymap.of([
         { key: 'Tab', run: acceptCompletion },
@@ -339,6 +347,9 @@ export const SqlEditor: React.FC<SqlEditorProps> = ({
 
     exts.push(
       EditorView.updateListener.of((update) => {
+        if (update.selectionSet || update.docChanged) {
+          onCursorChangeRef.current?.(update.state.selection.main.head);
+        }
         if (update.selectionSet && onSelectionChangeRef.current) {
           const { from, to } = update.state.selection.main;
           onSelectionChangeRef.current(from !== to);

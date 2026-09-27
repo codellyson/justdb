@@ -12,6 +12,7 @@ import { SqlEditor } from './sql-editor';
 import { useQueryHistory } from '../hooks/use-query-history';
 import { QueryHistory } from './query-history';
 import { formatSQL } from '@/lib/sql-formatter';
+import { explainStatement } from '@/lib/smart-query';
 import { getStatementAtCursor, splitSqlStatements } from '@/lib/sql-statements';
 import { db } from '@/lib/db';
 import { ai } from '@/lib/ai';
@@ -128,6 +129,9 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({
   const [showAiGenerate, setShowAiGenerate] = useState(false);
   const editorViewRef = useRef<EditorView | null>(null);
   const [hasSelection, setHasSelection] = useState(false);
+  const [cursorPosition, setCursorPosition] = useState(0);
+  const currentStatement = getStatementAtCursor(query, cursorPosition);
+  const statementHelp = currentStatement ? explainStatement(currentStatement.text) : null;
   const [pendingQueryConfirm, setPendingQueryConfirm] = useState<PendingQueryConfirmation | null>(null);
   const [isExportOpen, setIsExportOpen] = useState(false);
 
@@ -211,57 +215,45 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({
           return;
         }
 
-        const allRows = data.rows || [];
-        const totalRows = allRows.length;
         const maxRows = getResultRowCap();
-        const truncated = totalRows > maxRows;
-        const rows = truncated ? allRows.slice(0, maxRows) : allRows;
-        const cols = rows.length > 0 ? Object.keys(rows[0]) : [];
-        const columnTypes = parseColumnTypes(data);
-        const fields = data.fields as QueryFieldInfo[] | undefined;
-        const execTime = data.executionTime || 0;
-        const label = execQuery.length > 30 ? execQuery.slice(0, 30) + '...' : execQuery;
-
-        if (truncated) {
-          addToast(`Showing first ${maxRows.toLocaleString()} of ${totalRows.toLocaleString()} rows. Add LIMIT to your query for better performance.`, 'warning');
-        }
-
-        const existingId = resultTabs.find((t) => t.sql === execQuery)?.id;
-        const tabId =
-          existingId ?? `qr_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-
-        setResultTabs((prev) => {
-          const idx = prev.findIndex((t) => t.sql === execQuery);
-          if (idx >= 0) {
-            const updated: ResultTab = {
-              ...prev[idx],
-              rows,
-              columns: cols,
-              columnTypes,
-              executionTime: execTime,
-              fields,
-              totalRows,
-              truncated,
-            };
-            return prev.map((t, i) => (i === idx ? updated : t));
+        const occurrences = new Map<string, number>();
+        const completedTabs: ResultTab[] = data.results.map((result, index) => {
+          const allRows = result.rows || [];
+          const totalRows = allRows.length;
+          const truncated = totalRows > maxRows;
+          const rows = truncated ? allRows.slice(0, maxRows) : allRows;
+          const occurrence = occurrences.get(result.sql) ?? 0;
+          occurrences.set(result.sql, occurrence + 1);
+          const existing = resultTabs.filter(tab => tab.sql === result.sql)[occurrence];
+          const preview = result.sql.length > 36 ? result.sql.slice(0, 36) + '…' : result.sql;
+          if (truncated) {
+            addToast(`Query ${index + 1}: showing first ${maxRows.toLocaleString()} of ${totalRows.toLocaleString()} rows.`, 'warning');
           }
-          return [
-            ...prev,
-            {
-              id: tabId,
-              label,
-              sql: execQuery,
-              rows,
-              columns: cols,
-              columnTypes,
-              executionTime: execTime,
-              fields,
-              totalRows,
-              truncated,
-            },
-          ];
+          return {
+            id: existing?.id ?? `qr_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+            label: data.results.length > 1 ? `${index + 1} · ${preview}` : preview,
+            sql: result.sql,
+            rows,
+            columns: rows.length > 0 ? Object.keys(rows[0]) : [],
+            columnTypes: parseColumnTypes(result),
+            fields: result.fields as QueryFieldInfo[] | undefined,
+            executionTime: result.executionTime || 0,
+            totalRows,
+            truncated,
+          };
         });
-        setActiveResultTabId(tabId);
+        setResultTabs(prev => {
+          const next = [...prev];
+          for (const tab of completedTabs) {
+            const index = next.findIndex(existing => existing.id === tab.id);
+            if (index >= 0) next[index] = tab;
+            else next.push(tab);
+          }
+          return next;
+        });
+        if (completedTabs.length) setActiveResultTabId(completedTabs[0].id);
+        const execTime = data.executionTime || 0;
+        const totalRows = completedTabs.reduce((count, tab) => count + (tab.totalRows ?? tab.rows.length), 0);
         setOutputView('results');
         addQuery(execQuery, execTime, totalRows);
         void track({ name: 'query_executed', duration_bucket: bucketDuration(execTime), has_rows: totalRows > 0 });
@@ -709,8 +701,16 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({
                 defaultSchema={selectedSchema}
                 editorRef={editorViewRef}
                 onSelectionChange={setHasSelection}
+                onCursorChange={setCursorPosition}
               />
             </div>
+            {statementHelp && (
+              <details className="shrink-0 border-t border-border px-3 py-2 text-support text-secondary">
+                <summary className="cursor-pointer w-fit rounded-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent">Explain statement · {statementHelp.title}</summary>
+                <p className="pt-2 text-sm leading-relaxed max-w-2xl">{statementHelp.description}</p>
+                <p className="pt-1 text-meta text-muted">Syntax guide · No query executed. Hover a SQL keyword or function to explain that part.</p>
+              </details>
+            )}
           </div>
           {error && (
             <ErrorState

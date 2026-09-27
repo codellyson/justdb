@@ -3,6 +3,21 @@ import { parseFilterExpression } from './filter-expression';
 import { describeFilters, type Filter } from './filters';
 const columns = ['host', 'place', 'count', 'active'];
 describe('toolbar WHERE filters', () => {
+  it('accepts quoted and unquoted email columns and preserves plus addressing', () => {
+    for (const name of ['email', '"email"']) {
+      expect(parseFilterExpression(`${name}='name+1@example.com'`, ['email'])).toEqual([
+        { column: 'email', operator: 'eq', value: 'name+1@example.com' },
+      ]);
+    }
+  });
+  it('explains curly delimiters and single-quoted column mistakes', () => {
+    expect(() => parseFilterExpression("‘email'='name+1@example.com'", ['email'])).toThrow('curly quotes');
+    expect(() => parseFilterExpression("'email'='name+1@example.com'", ['email'])).toThrow('Single quotes are for text values');
+    expect(() => parseFilterExpression("email='unfinished", ['email'])).toThrow('Close the text value');
+  });
+  it('preserves typographic apostrophes inside correctly quoted values', () => {
+    expect(parseFilterExpression("host = 'O’Brien'", columns)[0].value).toBe('O’Brien');
+  });
   it('parses the example into bound server filters', () => {
     expect(parseFilterExpression("host = 'Mac' AND place IS NOT NULL", columns)).toEqual([
       { column: 'host', operator: 'eq', value: 'Mac' },

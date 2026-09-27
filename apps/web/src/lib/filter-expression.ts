@@ -8,7 +8,14 @@ export function parseFilterExpression(expression: string, columns: string[]): Fi
   let rest = expression.trim();
   while (rest) {
     const match = /^(?:\s+|('(?:''|[^'])*')|("(?:""|[^"])*")|(-?(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?)|([A-Za-z_][A-Za-z0-9_$]*)|(<>|!=|=|\(|\)|,))/i.exec(rest);
-    if (!match) throw new Error(`Unexpected syntax near “${rest.slice(0, 24)}”. Use AND to combine filters.`);
+    if (!match) {
+      if (/^[‘’“”]/.test(rest)) {
+        throw new Error('Use straight quotes, not curly quotes. Write column names without quotes or with double quotes, and text values in single quotes. Example: email = \'name@example.com\'.');
+      }
+      if (rest.startsWith("'")) throw new Error('Close the text value with a straight single quote (\'). Escape an apostrophe inside a value as two single quotes.');
+      if (rest.startsWith('"')) throw new Error('Close the column name with a straight double quote (").');
+      throw new Error(`Unexpected syntax near “${rest.slice(0, 24)}”. Check the operator and quoting.`);
+    }
     if (match[1]) tokens.push({ kind: 'string', value: match[1].slice(1, -1).replace(/''/g, "'") });
     else if (match[2]) tokens.push({ kind: 'identifier', value: match[2].slice(1, -1).replace(/""/g, '"') });
     else if (match[3]) tokens.push({ kind: 'number', value: match[3] });
@@ -28,6 +35,7 @@ export function parseFilterExpression(expression: string, columns: string[]): Fi
   const expect = (value: string) => { if (!eat(value)) throw new Error(`Expected ${value}.`); };
   const literal = (): string | number | boolean | null => {
     const token = tokens[position++];
+
     if (!token) throw new Error('Enter a value after the operator.');
     if (token.kind === 'string') return token.value;
     if (token.kind === 'number') {
@@ -50,6 +58,9 @@ export function parseFilterExpression(expression: string, columns: string[]): Fi
   }
   do {
     const token = tokens[position++];
+    if (token?.kind === 'string') {
+      throw new Error('Single quotes are for text values, not column names. Use an unquoted column name or double quotes. Example: "email" = \'name@example.com\'.');
+    }
     if (!token || !['word', 'identifier'].includes(token.kind)) throw new Error('Start each condition with a column name.');
     const column = columns.find(c => c === token.value) ?? (token.kind === 'word' ? columns.find(c => c.toLowerCase() === token.value.toLowerCase()) : undefined);
     if (!column) throw new Error(`Unknown column “${token.value}”.`);

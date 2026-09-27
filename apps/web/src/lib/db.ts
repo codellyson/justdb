@@ -359,7 +359,15 @@ interface RunQueryConfirmation {
   };
 }
 
+interface StatementResult {
+  sql: string;
+  rows: any[];
+  executionTime: number;
+  fields: any[];
+}
+
 interface RunQueryResult {
+  results: StatementResult[];
   needsConfirmation?: false;
   rows: any[];
   executionTime: number;
@@ -392,12 +400,14 @@ async function runQuery(
     };
   }
   let result: { rows: any[]; executionTime: number; fields: any[] } = { rows: [], executionTime: 0, fields: [] };
+  const results: StatementResult[] = [];
   let elapsed = 0;
   let openedTransaction = false;
   const statements = splitSqlStatements(query).filter(s => classifyQuery(s.text).statement);
   try {
     for (const statement of statements) {
       result = await invoke<typeof result>('db_run_query', { sessionId: sid, sql: statement.text });
+      results.push({ ...result, sql: statement.text });
       elapsed += result.executionTime;
       const keyword = classifyQuery(statement.text).statement;
       if (keyword === 'BEGIN' || keyword === 'START') openedTransaction = true;
@@ -413,6 +423,7 @@ async function runQuery(
   result.executionTime = elapsed;
   return {
     ...result,
+    results,
     classification: {
       kind: classification.kind,
       statement: classification.statement,

@@ -69,6 +69,19 @@ export function createBrutalistTheme(isDark: boolean) {
         outline: `1px solid ${rgb('--accent')}`,
         borderRadius: '2px',
       },
+      '.cm-tooltip:has(.sql-statement-help)': {
+        backgroundColor: rgb('--bg-secondary'),
+        color: rgb('--text-primary'),
+        border: `1px solid ${rgb('--border')}`,
+        borderRadius: '8px',
+        boxShadow: '0 4px 16px rgb(0 0 0 / .16)',
+      },
+      '.sql-statement-help': {
+        maxWidth: '340px', padding: '12px 16px',
+        fontFamily: 'var(--font-sans, system-ui)', fontSize: '14px', lineHeight: '1.5',
+      },
+      '.sql-statement-help p': { margin: '4px 0 8px' },
+      '.sql-statement-help small': { fontSize: '12px', color: rgb('--text-secondary') },
       '.cm-placeholder': {
         color: rgb('--text-muted'),
       },
