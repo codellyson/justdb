@@ -44,9 +44,11 @@ export const QueryExecutionConfirmation: React.FC<QueryExecutionConfirmationProp
   return (
     <Modal isOpen={isOpen} onClose={cancel} title={count > 1 ? `Run ${count} SQL statements?` : `Run ${statement}?`} preventClose={isLoading} width={640}>
       <p className="mb-4 text-sm text-secondary">Database: <strong className="font-medium text-primary">{databaseName ?? 'Current connection'}</strong></p>
-      <div className={`flex items-start gap-3 border-l-2 pl-3 ${dangerous ? 'border-danger' : 'border-warning'}`}>
-        <TriangleAlert aria-hidden className={`mt-0.5 size-4 shrink-0 ${dangerous ? 'text-danger' : 'text-warning'}`} />
-        <p className="text-sm leading-relaxed text-secondary">{consequence}</p>
+      <div className="flex items-start gap-3 text-sm leading-relaxed">
+        <span aria-hidden className="flex h-[1lh] shrink-0 items-center">
+          <TriangleAlert className={`size-4 ${dangerous ? 'text-danger' : 'text-warning'}`} />
+        </span>
+        <p className="text-secondary">{consequence}</p>
       </div>
       {count > 1 && <p className="mt-3 text-sm text-secondary">All {count} statements below will run in order. Without an explicit transaction, earlier changes may remain if a later statement fails.</p>}
       <pre className="my-5 max-h-[35vh] overflow-auto whitespace-pre-wrap break-words rounded-md border border-border bg-bg-secondary/40 p-4 font-mono text-sm text-primary">{sql}</pre>
