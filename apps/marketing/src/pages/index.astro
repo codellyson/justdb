@@ -59,8 +59,13 @@ const downloads = await resolveDownloads();
       <section class="product-overview shell" aria-label="The JustDB workspace">
         <div class="compatibility"><div>PostgreSQL <i aria-hidden="true">/</i> SQLite <i aria-hidden="true">/</i> Turso</div></div>
         <figure class="workspace-frame">
-          <div class="workspace-image"><span class="workspace-crop"><img src="/features/workspace-1600.webp" srcset="/features/workspace-800.webp 800w, /features/workspace-1600.webp 1600w, /features/workspace-2400.webp 2400w" sizes="(max-width: 1248px) calc(100vw - 48px), 1200px" width="2400" height="1000" alt="JustDB browsing sample users with a selected record open in the row inspector." fetchpriority="high" /></span></div>
-          <figcaption><span>A closer look at every record.</span> Filter your tables and inspect fields side by side.</figcaption>
+          <div class="workspace-image">
+            <video class="workspace-video" autoplay muted loop playsinline preload="metadata" poster="/videos/justdb-demo-poster.jpg" width="1920" height="1080" aria-label="JustDB product demo">
+              <source src="/videos/justdb-demo.mp4" type="video/mp4" />
+              Your browser does not support embedded video. <a href="/videos/justdb-demo.mp4">Download the JustDB demo.</a>
+            </video>
+          </div>
+          <figcaption><span>See JustDB in action.</span> Watch the workspace, query editor, and tools in this short demo.</figcaption>
         </figure>
       </section>
 
@@ -68,14 +73,14 @@ const downloads = await resolveDownloads();
         <div class="section-intro"><h2>Less setup.<br />More understanding.</h2><p>From the first connection to the next query,<br class="desktop-break" /> everything stays close to your data.</p></div>
         <div class="feature-grid">
         {[
-          { title: 'Pick up where you left off.', body: 'Keep your saved connections together and discover PostgreSQL servers running on your machine. Choose a connection and get straight to your data.', image: 'connections', x: 1220, y: 200, width: 1160, height: 1100, alt: 'Saved database connections and two locally detected PostgreSQL servers.', caption: 'Saved connections and local discovery, together.' },
-          { title: 'Ask. Review. Then run.', body: 'Ask the optional AI assistant about your data. When you request a change, inspect the proposed SQL and open it in the editor before running it. Here, a deletion is explicitly marked “Not run.”', image: 'ai-review', x: 1750, y: 80, width: 930, height: 1210, alt: 'AI answering a row-count question and showing a proposed deletion with Review in editor and Copy SQL actions.', caption: 'Proposed changes remain yours to review and execute.' },
-          { title: 'Make values easier to read.', body: 'Choose relative dates, pretty JSON, boolean badges, and comma-separated numbers. Control how values appear in your tables from the docked formatting settings.', image: 'formatting', x: 2680, y: 0, width: 920, height: 1160, alt: 'Formatting settings with controls for dates, JSON, booleans, numbers, and long text.', caption: 'Display preferences within reach of your workspace.' },
+          { title: 'Pick up where you left off.', body: 'Keep your saved connections together and discover PostgreSQL servers running on your machine. Choose a connection and get straight to your data.', image: 'connections', width: 560, height: 600, alt: 'Saved database connections and two locally detected PostgreSQL servers.', caption: 'Saved connections and local discovery, together.' },
+          { title: 'Make values easier to read.', body: 'Choose relative dates, pretty JSON, boolean badges, and comma-separated numbers. Control how values appear in your tables from the docked formatting settings.', image: 'formatting', width: 460, height: 690, alt: 'Formatting settings with controls for dates, JSON, booleans, numbers, and long text.', caption: 'Display preferences within reach of your workspace.' },
+          { title: 'Run more. Keep every result.', body: 'Run multiple SELECT statements together, or highlight just the queries you need. Each statement opens its own result tab so you can switch between counts and records.', image: 'query-results', width: 990, height: 570, alt: 'Two SELECT statements in the SQL editor with separate result tabs and sample user records.', caption: 'Multiple queries. Separate results. One editor.' },
         ].map(feature => (
           <article class="feature-story">
             <div class="feature-copy"><h2>{feature.title}</h2><p>{feature.body}</p></div>
             <figure>
-              <div class="feature-image"><span class="feature-crop" style={`aspect-ratio:${feature.width}/${feature.height}`}><img src={`/features/${feature.image}-${feature.width}.webp`} srcset={`/features/${feature.image}-${feature.width / 2}.webp ${feature.width / 2}w, /features/${feature.image}-${feature.width}.webp ${feature.width}w`} sizes="(max-width: 760px) calc(100vw - 80px), (max-width: 1248px) calc(50vw - 66px), 524px" width={feature.width} height={feature.height} loading="lazy" decoding="async" alt={feature.alt} /></span></div>
+              <div class="feature-image"><span class="feature-crop" style={`aspect-ratio:${feature.width}/${feature.height}`}><img src={`/features/${feature.image}-${feature.width}.webp`} srcset={`/features/${feature.image}-${feature.width / 2}.webp ${feature.width / 2}w, /features/${feature.image}-${feature.width}.webp ${feature.width}w`} sizes={feature.image === 'query-results' ? '(max-width: 760px) calc(100vw - 80px), (max-width: 1248px) calc(100vw - 112px), 990px' : '(max-width: 760px) calc(100vw - 80px), (max-width: 1248px) calc(50vw - 66px), 524px'} width={feature.width} height={feature.height} loading="lazy" decoding="async" alt={feature.alt} /></span></div>
               <figcaption>{feature.caption}</figcaption>
             </figure>
           </article>
@@ -156,8 +161,7 @@ const downloads = await resolveDownloads();
   .workspace-frame { margin:0; border:1px solid rgb(var(--border)); border-radius:12px; overflow:hidden; background:rgb(var(--bg-secondary)); }
   .frame-label { display:flex; justify-content:space-between; padding:16px 20px; border-bottom:1px solid rgb(var(--border)); }
   .workspace-image { display:block; }
-  .workspace-crop { display:block; aspect-ratio:3600/1500; overflow:hidden; }
-  .workspace-crop img { display:block; width:100%; height:auto; }
+  .workspace-video { display:block; width:100%; height:auto; background:#111; }
   .workspace-frame figcaption { display:flex; flex-wrap:wrap; gap:8px; padding:16px 20px; border-top:1px solid rgb(var(--border)); font-size:12px; color:rgb(var(--text-muted)); }
   .workspace-frame figcaption span { color:rgb(var(--text-primary)); }
   .feature-stories { margin-top:96px; scroll-margin-top:90px; }
@@ -166,7 +170,8 @@ const downloads = await resolveDownloads();
   .section-intro>p:last-child { margin-top:20px; font-size:16px; line-height:1.6; color:rgb(var(--text-secondary)); }
   .feature-grid { position:relative; isolation:isolate; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:20px; }
   .feature-story:last-child { grid-column:1 / -1; }
-  .feature-story:last-child figure { max-width:524px; }
+  .feature-story:last-child figure { max-width:990px; }
+  .feature-grid { align-items:start; }
   .feature-story {
     position:relative; z-index:1; border:1px solid rgb(255 255 255 / .16);
     border-radius:12px; background:rgb(18 18 18 / .28);
@@ -210,7 +215,7 @@ const downloads = await resolveDownloads();
   .feature-image { display:block; border:1px solid rgb(var(--border)); border-radius:6px; overflow:hidden; }
   .feature-crop { display:block; position:relative; overflow:hidden; }
   .feature-crop img { display:block; width:100%; height:auto; }
-  .workspace-crop img,.feature-crop img { filter:grayscale(1); }
+  .feature-crop img { filter:grayscale(1); }
   .feature-story figcaption { margin-top:12px; font-size:12px; line-height:1.5; color:rgb(var(--text-muted)); }
   .statement { margin-top:96px; display:grid; grid-template-columns:1fr 1fr; gap:64px; padding-block:48px; border-top:1px solid rgb(var(--border)); border-bottom:1px solid rgb(var(--border)); }
   .statement p:not(.eyebrow) { font-size:16px; line-height:1.75; color:rgb(var(--text-secondary)); }
