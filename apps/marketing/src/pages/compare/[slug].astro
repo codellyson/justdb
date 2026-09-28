@@ -7,7 +7,7 @@ import CtaBand from '../../components/CtaBand.astro';
 import PageScripts from '../../components/PageScripts.astro';
 import Button from '../../components/Button.astro';
 import { COMPARISONS } from '../../lib/comparisons';
-import { LAUNCH_URL, RELEASES_URL } from '../../lib/site';
+import { RELEASES_URL } from '../../lib/site';
 import {
   breadcrumbJsonLd,
   faqJsonLd,
@@ -59,11 +59,7 @@ const jsonLd = [
           </h1>
           <p class="mt-6 max-w-2xl text-[17px] leading-relaxed text-secondary" data-reveal>{c.lead}</p>
           <div class="mt-8 flex flex-col gap-3 sm:flex-row" data-reveal>
-            <Button size="lg" href={LAUNCH_URL} title="Launch JustDB — requires the desktop app to be installed" class="w-full sm:w-auto">
-              Launch installed app
-              <span class="transition-transform duration-200 group-hover:translate-x-0.5">→</span>
-            </Button>
-            <Button size="lg" variant="secondary" href={RELEASES_URL} external class="w-full sm:w-auto">
+            <Button size="lg" href={RELEASES_URL} external class="w-full sm:w-auto">
               Download desktop app
             </Button>
           </div>

@@ -1,5 +1,5 @@
 ---
-import { LAUNCH_URL, REPO_URL } from '../lib/site';
+import { RELEASES_URL, REPO_URL } from '../lib/site';
 interface Props { home?: boolean; }
 const { home = false } = Astro.props;
 ---
@@ -9,7 +9,7 @@ const { home = false } = Astro.props;
     <div class="site-links"><a href={home ? '#features' : '/#features'}>Features</a><a href="/blog" aria-current={Astro.url.pathname.startsWith('/blog') ? 'page' : undefined}>Blog</a><a href={REPO_URL}>GitHub ↗</a></div>
     <div class="site-actions">
       <button id="theme-toggle" type="button" aria-label="Switch to light theme" aria-pressed="false" title="Toggle light/dark">☼</button>
-      <a class="site-open" href={LAUNCH_URL} title="Launch JustDB — requires the desktop app to be installed">Launch installed app</a>
+      <a class="site-open" href={RELEASES_URL}>Download JustDB</a>
     </div>
   </nav>
 </div>

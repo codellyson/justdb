@@ -1,9 +1,7 @@
 ---
-// Reusable closing CTA for sub-pages. Mirrors the homepage's launch behaviour
-// (justdb:// deep link with a download fallback) but without the build-time
-// GitHub asset lookup — sub-pages just send downloads to the releases page.
+// Reusable download CTA for marketing sub-pages.
 import Button from './Button.astro';
-import { LAUNCH_URL, RELEASES_URL } from '../lib/site';
+import { RELEASES_URL } from '../lib/site';
 
 interface Props {
   title?: string;
@@ -27,11 +25,7 @@ const {
     </h2>
     <p class="mx-auto mt-5 max-w-lg text-[16px] leading-relaxed text-secondary" data-reveal>{body}</p>
     <div class="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row" data-reveal>
-      <Button size="lg" href={LAUNCH_URL} title="Launch JustDB — requires the desktop app to be installed" class="w-full sm:w-auto">
-        Launch installed app
-        <span class="transition-transform duration-200 group-hover:translate-x-0.5">→</span>
-      </Button>
-      <Button size="lg" variant="secondary" href={RELEASES_URL} external class="w-full sm:w-auto">
+      <Button size="lg" href={RELEASES_URL} external class="w-full sm:w-auto">
         Download desktop app
       </Button>
     </div>

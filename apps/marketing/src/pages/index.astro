@@ -1,7 +1,7 @@
 ---
 import Nav from '../components/Nav.astro';
 import Layout from '../layouts/Layout.astro';
-import { LAUNCH_URL, RELEASES_URL, REPO, REPO_URL } from '../lib/site';
+import { RELEASES_URL, REPO, REPO_URL } from '../lib/site';
 import { organizationJsonLd, softwareApplicationJsonLd, websiteJsonLd } from '../lib/seo';
 const downloadUrl = RELEASES_URL;
 
@@ -46,7 +46,6 @@ const downloads = await resolveDownloads();
         <p class="intro">Browse PostgreSQL, SQLite, and Turso. Run SQL, follow relationships, and review edits before saving — all from your desktop.</p>
         <div class="hero-actions">
           <a class="button" id="cta-download" href={downloadUrl} data-download-macos={downloads.macos} data-download-windows={downloads.windows} data-download-linux={downloads.linux}>Download JustDB</a>
-          <a class="button secondary" href={LAUNCH_URL} title="Launch JustDB — requires the desktop app to be installed">Launch installed app <span aria-hidden="true">↗</span></a>
         </div>
         <p class="availability">Free · macOS & Windows · No account needed</p>
         <div class="brew-install">
@@ -101,7 +100,7 @@ const downloads = await resolveDownloads();
       <section class="closing">
         <div class="closing-card">
           <h2>Get straight to <span class="accent">your data.</span></h2>
-          <div class="closing-actions"><a class="button" href={LAUNCH_URL} title="Launch JustDB — requires the desktop app to be installed">Launch installed app</a><a class="quiet-link" href={downloadUrl}>Download JustDB</a></div>
+          <div class="closing-actions"><a class="button" href={downloadUrl}>Download JustDB</a></div>
           <p class="availability">Free, on your desktop. No account needed to start.</p>
         </div>
       </section>
@@ -241,7 +240,6 @@ const downloads = await resolveDownloads();
 
 <script>
   // Detect the platform only to label the explicit download link.
-  // Launch links never redirect to or automatically download an installer.
   type OS = 'macos' | 'windows' | 'linux';
 
   function detectOS(): OS | null {

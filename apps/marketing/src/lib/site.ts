@@ -11,11 +11,6 @@ export const ISSUES_URL = `${REPO_URL}/issues`;
 export const DOCS_URL = `${REPO_URL}#readme`;
 export const ORG_URL = 'https://kreativekorna.com';
 
-// The "Launch installed app" CTA points at the `justdb://` scheme registered by the
-// Tauri build (see src-tauri/tauri.conf.json → plugins.deep-link), so the
-// visible action matches the intent. Downloads require their own explicit click.
-export const LAUNCH_URL = 'justdb://open';
-
 /**
  * Databases the Rust backend can actually open. `DbType` in
  * src-tauri/src/postgres.rs has exactly two variants — Postgresql and Sqlite —
