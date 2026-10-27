@@ -4,6 +4,18 @@ All notable changes to JustDB are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning follows
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.5] - 2026-10-27
+
+### Added
+- **desktop:** Open saved connections from justdb://connect links ([7105a76](https://github.com/codellyson/justdb/commit/7105a7606b074705316b70b770a3b3323d72e433))
+
+
+### Fixed
+- **marketing:** Refresh theme screenshots and social preview ([c756ad9](https://github.com/codellyson/justdb/commit/c756ad920505d25428124ecac0854364133614b8))
+- **marketing:** Require explicit installer downloads ([37d1ce1](https://github.com/codellyson/justdb/commit/37d1ce1e6db78295ea09da54aa220c9f27415ab3))
+- **marketing:** Clarify launch actions and widen closing content ([d9cd5d6](https://github.com/codellyson/justdb/commit/d9cd5d66252937d1a943ee5fcb1e73582fb3bef6))
+- **marketing:** Remove app-launch links from website ([5c743fe](https://github.com/codellyson/justdb/commit/5c743fe03d1aafa94cfadc1555c67709393c23c7))
+
 ## [0.2.4] - 2026-09-27
 
 ### Added
