@@ -51,6 +51,8 @@ struct AppState {
     // Where saved-connection metadata is persisted (the OS keychain holds the
     // secrets). Resolved once at startup from the app config dir.
     config_dir: std::path::PathBuf,
+    // Last justdb:// URL the OS handed us, held until the webview takes it.
+    pending_deep_link: std::sync::Mutex<Option<String>>,
 }
 
 /// Uniform "not implemented for SQLite yet" surface so the frontend gets
@@ -946,6 +948,11 @@ async fn resolve_field_sources(
     }
 
     (oid_map, col_map)
+}
+
+#[tauri::command]
+fn take_deep_link(state: State<'_, AppState>) -> Option<String> {
+    state.pending_deep_link.lock().ok()?.take()
 }
 
 #[tauri::command]
@@ -1984,10 +1991,8 @@ pub fn run() {
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_dialog::init())
-        // Registers the `justdb://` URL scheme at install time so the
-        // marketing site's "Open JustDB" CTA can launch the desktop app.
-        // We don't consume the URL payload yet — the OS just brings the
-        // window forward when justdb://<anything> is invoked.
+        // Registers the `justdb://` URL scheme. justdb://connect/<saved name or id>
+        // opens that saved connection; anything else just raises the window.
         .plugin(tauri_plugin_deep_link::init())
         .setup(|app| {
             // Saved-connection metadata lands here (secrets stay in the OS
@@ -2000,6 +2005,25 @@ pub fn run() {
                 config_dir,
                 ..Default::default()
             });
+
+            {
+                use tauri_plugin_deep_link::DeepLinkExt;
+                let handle = app.handle().clone();
+                let stash = move |url: String| {
+                    if let Ok(mut pending) = handle.state::<AppState>().pending_deep_link.lock() {
+                        *pending = Some(url);
+                    }
+                    let _ = handle.emit("deep-link", ());
+                };
+                if let Some(url) = app.deep_link().get_current().ok().flatten().and_then(|u| u.last().cloned()) {
+                    stash(url.to_string());
+                }
+                app.deep_link().on_open_url(move |event| {
+                    if let Some(url) = event.urls().last() {
+                        stash(url.to_string());
+                    }
+                });
+            }
 
             // Force launch size after creation so macOS frame restoration
             // can't shrink the window below the config size.
@@ -2041,6 +2065,7 @@ pub fn run() {
             db_table_counts,
             db_table_stats,
             db_saved_list,
+            take_deep_link,
             db_saved_create,
             db_saved_delete,
             db_saved_connect,

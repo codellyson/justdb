@@ -6,6 +6,8 @@ import { db } from '@/lib/db';
 import { getIdleTimeoutMin } from '@/lib/app-settings';
 import { track, toDbKind } from '@/lib/telemetry';
 import { useToast } from './toast-context';
+import { invoke } from '@tauri-apps/api/core';
+import { listen } from '@tauri-apps/api/event';
 
 const ACTIVITY_THROTTLE_MS = 5_000;
 const ACTIVITY_CHANNEL = 'justdb-activity';
@@ -81,6 +83,22 @@ export function ConnectionProvider({ children }: { children: React.ReactNode }) 
         }
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [savedConnections.length]);
+
+  useEffect(() => {
+    if (savedConnections.length === 0) return;
+    const openPending = async () => {
+      const url = await invoke<string | null>('take_deep_link');
+      const target = url?.match(/^justdb:\/\/connect\/([^?#]+)/)?.[1];
+      if (!target) return;
+      const name = decodeURIComponent(target).replace(/\/$/, '');
+      const match = savedConnections.find(c => c.id === name || c.name === name);
+      if (match) connectToSaved(match.id).catch(() => {});
+    };
+    void openPending();
+    const unlisten = listen('deep-link', () => void openPending());
+    return () => { void unlisten.then(off => off()); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [savedConnections.length]);
 
